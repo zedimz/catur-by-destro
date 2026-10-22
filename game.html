@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Chess - Game</title>
+<!-- AGORA SDK -->
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
 <style>
   * {
     margin: 0;
@@ -315,7 +317,7 @@
     display: flex; flex-direction: column; align-items: center; gap: 3px;
     padding: 8px 16px; border-radius: 14px; background: var(--panel); border: 1px solid var(--border);
     color: #fff; cursor: pointer; transition: 0.2s; font-family: inherit; min-width: 70px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative;
   }
   .ctrl-btn:hover:not(:disabled) {
     border-color: var(--gold); background: rgba(255,215,0,0.1); transform: translateY(-3px);
@@ -329,6 +331,16 @@
     border-color: var(--red); background: rgba(255,60,60,0.2);
     box-shadow: 0 6px 15px rgba(255,60,60,0.2);
   }
+
+  /* Tombol Mic */
+  .ctrl-btn.mic-btn.on { border-color: var(--green); background: rgba(77,255,136,0.15); box-shadow: 0 0 15px rgba(77,255,136,0.3); }
+  .ctrl-btn.mic-btn.off { border-color: rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); }
+  .ctrl-btn.mic-btn.off .ico { filter: grayscale(1); opacity: 0.5; }
+  .ctrl-btn.mic-btn .pulse {
+    position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.7; } }
 
   /* ===== MODAL ===== */
   .modal-overlay {
@@ -367,7 +379,6 @@
   .btn-danger { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
   .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,60,60,0.5); }
 
-  /* Rank display */
   .rank-display {
     background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.25);
     border-radius: 16px; padding: 16px; margin-bottom: 14px;
@@ -383,7 +394,6 @@
   }
   .rank-stars-big .empty { opacity: 0.2; }
 
-  /* Level up box */
   .levelup-box {
     background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(255,0,170,0.12));
     border: 1px solid rgba(0,229,255,0.4); border-radius: 14px; padding: 14px; margin-bottom: 14px;
@@ -404,7 +414,6 @@
   }
   .levelup-reward { font-size: 12px; color: var(--gold); font-weight: 800; letter-spacing: 0.5px; }
 
-  /* By One invite form */
   .invite-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
   .form-input {
     width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.35); border: 1.5px solid rgba(255,255,255,0.12);
@@ -428,7 +437,6 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Reward row di game over */
   .reward-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
   .reward-chip {
     display: flex; align-items: center; gap: 4px; background: rgba(255,215,0,0.1);
@@ -437,7 +445,6 @@
   }
   .reward-chip.exp { background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.3); color: var(--cyan); }
 
-  /* Toast */
   .toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
     background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; padding: 12px 24px;
@@ -449,7 +456,6 @@
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.error { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
 
-  /* Promotion modal */
   .promo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
   .promo-btn {
     aspect-ratio: 1; border-radius: 12px; background: rgba(255,255,255,0.06);
@@ -484,13 +490,11 @@
 </head>
 <body>
 
-  <!-- SFX -->
   <audio id="sfxClick" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
   <audio id="sfxCapture" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
   <audio id="sfxWin" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" preload="auto"></audio>
   <audio id="sfxLose" src="https://assets.mixkit.co/active_storage/sfx/2531/2531-preview.mp3" preload="auto"></audio>
 
-  <!-- ===== TOP BAR ===== -->
   <div class="game-topbar">
     <div class="top-left">
       <div class="mode-badge" id="modeBadge">
@@ -505,7 +509,6 @@
     </div>
   </div>
 
-  <!-- ===== PLAYER BAR ===== -->
   <div class="player-bar">
     <div class="player-info">
       <div class="p-avatar" id="myAvatar">♔</div>
@@ -534,13 +537,16 @@
     </div>
   </div>
 
-  <!-- ===== BOARD ===== -->
   <div class="board-wrap">
     <div class="chess-board" id="board"></div>
   </div>
 
-  <!-- ===== CONTROLS ===== -->
   <div class="game-controls">
+    <button class="ctrl-btn mic-btn off" id="micBtn" title="Voice Chat">
+      <span class="ico">🎤</span>
+      <span class="lbl" id="micLbl">MIC OFF</span>
+    </button>
+    
     <button class="ctrl-btn" id="flipBtn">
       <span class="ico">🔄</span>
       <span class="lbl">FLIP</span>
@@ -555,7 +561,6 @@
     </button>
   </div>
 
-  <!-- ===== MODAL: KELUAR CLASSIC ===== -->
   <div class="modal-overlay" id="exitModal">
     <div class="modal">
       <div class="modal-icon">🚪</div>
@@ -568,7 +573,6 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: RANK NO EXIT ===== -->
   <div class="modal-overlay" id="rankExitModal">
     <div class="modal">
       <div class="modal-icon">🚫</div>
@@ -580,7 +584,6 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: GAME OVER ===== -->
   <div class="modal-overlay" id="gameOverModal">
     <div class="modal">
       <div class="modal-icon" id="goIcon">🏆</div>
@@ -620,7 +623,6 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: PROMOTION ===== -->
   <div class="modal-overlay" id="promoModal">
     <div class="modal">
       <div class="modal-icon">👑</div>
@@ -630,7 +632,6 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: RESIGN CONFIRM ===== -->
   <div class="modal-overlay" id="resignModal">
     <div class="modal">
       <div class="modal-icon">🏳️</div>
@@ -643,7 +644,6 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: DRAW OFFER ===== -->
   <div class="modal-overlay" id="drawModal">
     <div class="modal">
       <div class="modal-icon">🤝</div>
@@ -656,7 +656,6 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: SETUP (PILIH MODE) ===== -->
   <div class="modal-overlay show" id="setupModal">
     <div class="modal">
       <div class="modal-icon">🎮</div>
@@ -664,44 +663,36 @@
       <div class="modal-text">Pilih mode permainan</div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <button class="btn-primary" id="chooseClassic" style="padding:14px;">
-          ⚔️ CLASSIC<br>
-          <span style="font-size:10px;font-weight:600;opacity:0.7;">Bisa keluar & undo</span>
+          ⚔️ CLASSIC<br><span style="font-size:10px;font-weight:600;opacity:0.7;">Bisa keluar & undo</span>
         </button>
         <button class="btn-primary" id="chooseRank" style="padding:14px;background:linear-gradient(135deg,#ffd700,#b8860b);">
-          🏆 RANK<br>
-          <span style="font-size:10px;font-weight:600;opacity:0.7;">Ranked match • no undo • no exit</span>
+          🏆 RANK<br><span style="font-size:10px;font-weight:600;opacity:0.7;">Ranked match • no undo • no exit</span>
         </button>
         <button class="btn-primary" id="chooseByOne" style="padding:14px;background:linear-gradient(135deg,#ff00aa,#aa0088);">
-          👥 BY ONE<br>
-          <span style="font-size:10px;font-weight:600;opacity:0.7;">Undang teman main bareng</span>
+          👥 BY ONE<br><span style="font-size:10px;font-weight:600;opacity:0.7;">Undang teman main bareng</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ===== MODAL: BY ONE INVITE ===== -->
   <div class="modal-overlay" id="inviteModal">
     <div class="modal">
       <div class="modal-icon">✉️</div>
       <div class="modal-title">Undang Teman</div>
       <div class="modal-text">Masukkan username teman yang mau kamu tantang.</div>
-
       <div class="invite-form">
         <input type="text" class="form-input" id="friendInput" placeholder="Username teman..." maxlength="16">
         <button class="btn-primary" id="sendInvite" style="padding:12px;border-radius:12px;border:none;font-weight:800;font-size:12px;letter-spacing:1.5px;cursor:pointer;font-family:inherit;">
           📨 KIRIM UNDANGAN
         </button>
       </div>
-
       <div class="invite-status" id="inviteStatus" style="display:none;"></div>
-
       <div class="modal-actions" id="inviteActions">
         <button class="btn-cancel" id="cancelInvite">KEMBALI</button>
       </div>
     </div>
   </div>
 
-  <!-- ===== MODAL: BY ONE WAITING ===== -->
   <div class="modal-overlay" id="waitingModal">
     <div class="modal">
       <div class="modal-icon"><span class="spinner"></span></div>
@@ -718,11 +709,20 @@
 
 <script>
   /* =========================================================
-     KONFIGURASI & STATE
+     KONFIGURASI API & STATE
      ========================================================= */
   const API_URL = "https://catur-destro.dedisurakhman234.workers.dev/api";
   const CURRENT_USER = sessionStorage.getItem('chessUser') || (localStorage.getItem('chessOfflineMode') === 'true' ? 'Tamu' : null);
   const IS_OFFLINE = localStorage.getItem('chessOfflineMode') === 'true';
+
+  // === KONFIGURASI AGORA ===
+  const AGORA_APP_ID = "9b16af4fe1ee4337901855ac614bb74a";
+  let AGORA_TOKEN = ""; // Bakal diisi otomatis dari API pas game mulai
+  
+  let agoraClient = null;
+  let localAudioTrack = null;
+  let isMicOn = false;
+  let isJoiningVoice = false;
 
   if (!CURRENT_USER) window.location.href = 'login.html';
 
@@ -750,8 +750,6 @@
   let shopItems = { boards: [], pieces: [] };
   let equipped = { board: 'default', pieces: 'default' };
   let myName = CURRENT_USER || 'Tamu';
-
-  // STATE MULTIPLAYER
   let isMultiplayer = false;
   let currentRoomCode = null;
   let pollInterval = null;
@@ -762,7 +760,7 @@
   };
 
   /* =========================================================
-     RANK SYSTEM
+     RANK SYSTEM & UTILS
      ========================================================= */
   const RANK_NAMES = ['Bronze','Silver','Gold','Platinum','Diamond','Master','Grandmaster','Elite','Legend','Mythic','Immortal'];
   const MAX_STARS = RANK_NAMES.length * 4;
@@ -775,7 +773,6 @@
     const starsInRank = ((totalStars - 1) % 4) + 1;
     return { rankIdx, rankName: RANK_NAMES[rankIdx], stars: starsInRank, totalStars };
   }
-
   function renderRankBadge(rank, starsEl, nameEl) {
     if (nameEl) nameEl.textContent = rank.rankName + ' ' + toRoman(rank.rankIdx + 1);
     if (starsEl) {
@@ -789,9 +786,6 @@
     }
   }
 
-  /* =========================================================
-     FETCH USER DATA & SHOP
-     ========================================================= */
   async function fetchUserData() {
     if (IS_OFFLINE) {
       shopItems = DEFAULT_SHOP_ITEMS;
@@ -820,7 +814,6 @@
       } catch (e) { console.warn('Gagal ambil user:', e); }
     }
 
-    // Apply skin
     const boardSkin = shopItems.boards.find(b => b.id === equipped.board) || shopItems.boards[0] || DEFAULT_SHOP_ITEMS.boards[0];
     const pieceSkin = shopItems.pieces.find(p => p.id === equipped.pieces) || shopItems.pieces[0] || DEFAULT_SHOP_ITEMS.pieces[0];
     
@@ -833,9 +826,6 @@
     updateRankBadges();
   }
 
-  /* =========================================================
-     AI DIFFICULTY (BERDASARKAN LEVEL)
-     ========================================================= */
   function getAIDifficulty() {
     const lvl = (userData && userData.level) ? userData.level : 1;
     if (lvl <= 2) return { tier: 'easy', label: '🟢 MUDAH', depth: 0 };
@@ -844,16 +834,10 @@
     return { tier: 'hardcore', label: '💀 HARDCODE', depth: 2 };
   }
 
-  /* =========================================================
-     PARSE URL QUERY
-     ========================================================= */
   const urlParams = new URLSearchParams(window.location.search);
   const urlMode = urlParams.get('mode');
-  const urlRoom = urlParams.get('room'); // Buat multiplayer
+  const urlRoom = urlParams.get('room');
 
-  /* =========================================================
-     GAME STATE
-     ========================================================= */
   let mode = null;
   let board = [];
   let turn = 'w';
@@ -890,9 +874,6 @@
 
   function cloneBoard(b) { return b.map(row => [...row]); }
 
-  /* =========================================================
-     MOVE GENERATION
-     ========================================================= */
   function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
 
   function genMoves(r, c, checkKing = true) {
@@ -1011,9 +992,6 @@
   function isCheckmate(color) { return isInCheck(color) && getAllLegalMoves(color).length === 0; }
   function isStalemate(color) { return !isInCheck(color) && getAllLegalMoves(color).length === 0; }
 
-  /* =========================================================
-     RENDER BOARD
-     ========================================================= */
   const boardEl = document.getElementById('board');
 
   function renderBoard() {
@@ -1077,9 +1055,6 @@
     ind.classList.toggle('your-turn', isMyTurn);
   }
 
-  /* =========================================================
-     INTERAKSI
-     ========================================================= */
   function onSquareClick(r, c) {
     if (gameOver || aiThinking) return;
     if (turn !== myColor) return;
@@ -1125,9 +1100,6 @@
     turn = turn === 'w' ? 'b' : 'w';
     renderBoard();
     
-    // =========================================================
-    // [UPDATE MULTIPLAYER 1] KIRIM LANGKAH KE DATABASE
-    // =========================================================
     if (isMultiplayer) {
       let gameStatus = 'playing';
       let winner = null;
@@ -1205,9 +1177,6 @@
     }
   }
 
-  /* =========================================================
-     AI MOVE (MINIMAX) - CUMA JALAN KALO BUKAN MULTIPLAYER
-     ========================================================= */
   const PIECE_VALUE = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
 
   function evaluateBoard() {
@@ -1290,14 +1259,132 @@
   }
 
   /* =========================================================
-     END GAME (SINKRONISASI API) - INI BAGIAN PALING PENTING
+     FITUR VOICE CHAT (AGORA)
+     ========================================================= */
+  
+  // Fungsi inisialisasi Agora
+  async function initAgora(channelName) {
+    await leaveAgora();
+
+    if (!AGORA_APP_ID || AGORA_APP_ID === "ISI_APP_ID_AGORA") {
+        showToast('⚠️ App ID Agora belum diisi', 'error');
+        return;
+    }
+
+    if (!AGORA_TOKEN) {
+        showToast('⚠️ Token Agora kosong. Minta admin isi di Dashboard.', 'error');
+        return;
+    }
+
+    isJoiningVoice = true;
+    updateMicBtnUI();
+
+    try {
+        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        
+        agoraClient.on("user-published", async (user, mediaType) => {
+            await agoraClient.subscribe(user, mediaType);
+            if (mediaType === "audio") {
+                user.audioTrack.play();
+                showToast('🔊 ' + user.uid + ' masuk voice', 'success');
+            }
+        });
+
+        const uid = 0; 
+        await agoraClient.join(AGORA_APP_ID, channelName, AGORA_TOKEN, uid);
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({ encoderConfig: "music_standard" });
+        await agoraClient.publish([localAudioTrack]);
+        
+        isMicOn = true;
+        showToast('🎙️ Voice Channel tersambung!', 'success');
+
+    } catch (error) {
+        console.error("Agora Error:", error);
+        showToast('❌ Gagal nyambung mic: ' + error.message, 'error');
+        isMicOn = false;
+    } finally {
+        isJoiningVoice = false;
+        updateMicBtnUI();
+    }
+  }
+
+  async function leaveAgora() {
+    if (localAudioTrack) {
+        localAudioTrack.stop();
+        localAudioTrack.close();
+        localAudioTrack = null;
+    }
+    if (agoraClient) {
+        await agoraClient.leave();
+        agoraClient = null;
+    }
+    isMicOn = false;
+    updateMicBtnUI();
+  }
+
+  async function toggleMic() {
+    if (!agoraClient || !localAudioTrack) return;
+    
+    isMicOn = !isMicOn;
+    if (isMicOn) {
+        await localAudioTrack.setEnabled(true);
+        showToast('🎤 Mic Aktif', 'success');
+    } else {
+        await localAudioTrack.setEnabled(false);
+        showToast('🔇 Mic Mute', '');
+    }
+    updateMicBtnUI();
+  }
+
+  function updateMicBtnUI() {
+    const btn = document.getElementById('micBtn');
+    const lbl = document.getElementById('micLbl');
+    
+    if (isJoiningVoice) {
+        btn.className = 'ctrl-btn mic-btn';
+        lbl.textContent = 'MENGHUBUNGKAN...';
+        return;
+    }
+    
+    if (isMicOn) {
+        btn.className = 'ctrl-btn mic-btn on';
+        lbl.textContent = 'MIC ON';
+        if (!btn.querySelector('.pulse')) {
+            const p = document.createElement('div');
+            p.className = 'pulse';
+            btn.appendChild(p);
+        }
+    } else {
+        btn.className = 'ctrl-btn mic-btn off';
+        lbl.textContent = 'MIC OFF';
+        const p = btn.querySelector('.pulse');
+        if (p) p.remove();
+    }
+  }
+
+  document.getElementById('micBtn').addEventListener('click', () => {
+      if (!agoraClient) {
+          if (mode === 'byone' || isMultiplayer) {
+              initAgora(currentRoomCode || 'tes_voice');
+          } else {
+              showToast('❌ Voice Chat cuma buat mode By One', 'error');
+          }
+      } else {
+          toggleMic();
+      }
+  });
+
+  /* =========================================================
+     END GAME
      ========================================================= */
   async function endGame(result, reason) {
     gameOver = true;
     selected = null;
     validMoves = [];
     renderBoard();
-    if (pollInterval) clearInterval(pollInterval); // Stop polling
+    
+    if (pollInterval) clearInterval(pollInterval);
+    leaveAgora();
 
     const modal = document.getElementById('gameOverModal');
     const icon = document.getElementById('goIcon');
@@ -1327,7 +1414,6 @@
     }
     modal.classList.add('show');
 
-    // === MODE OFFLINE / MULTIPLAYER (No API update for Multiplayer) ===
     if (IS_OFFLINE) {
       let coins = parseInt(localStorage.getItem('chessCoins_Tamu') || '100');
       let prof = JSON.parse(localStorage.getItem('chessProfile_Tamu') || '{"level":1,"exp":0,"expToNext":10}');
@@ -1363,15 +1449,11 @@
       return;
     }
 
-    // === MODE ONLINE SINGLE PLAYER (Classic / Rank vs AI) ===
     if (isMultiplayer) {
-      // Kalau multiplayer, kita gak ngasih reward, cukup tampilin hasil
-      // (Sesuai kesepakatan: Friendly Match gak dapet rank/koin)
       renderGameOverUI(myResult, 0, 0, 0, false, 0, userData, { totalStars: userData.rank_stars }, 0, mode);
       return;
     }
 
-    // Mode Online biasa (vs AI)
     try {
       const resUser = await fetchAPI(`/user?username=${CURRENT_USER}`);
       if (!resUser.ok) throw new Error('Gagal ambil data user terbaru');
@@ -1475,9 +1557,6 @@
     }
   }
 
-  /* =========================================================
-     RANK BADGE DISPLAY
-     ========================================================= */
   function updateRankBadges() {
     if (!userData) return;
     const myRankObj = starsToRank(userData.rank_stars || 0);
@@ -1498,9 +1577,6 @@
     }
   }
 
-  /* =========================================================
-     [UPDATE MULTIPLAYER 2] FUNGSI SINKRONISASI
-     ========================================================= */
   function startMultiplayerPolling() {
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(async () => {
@@ -1510,22 +1586,18 @@
         const data = await res.json();
         const sess = data.session;
 
-        // Update profil lawan di UI
         if (sess.player_a.toLowerCase() === CURRENT_USER.toLowerCase()) {
-          // Gw Player A
           document.getElementById('oppName').textContent = sess.player_b;
           document.getElementById('oppAvatar').textContent = sess.player_b[0].toUpperCase();
           if (data.playerB) renderRankBadge(starsToRank(data.playerB.rank_stars), document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
           document.getElementById('oppRole').textContent = 'HITAM • ' + sess.player_b.toUpperCase();
         } else {
-          // Gw Player B
           document.getElementById('oppName').textContent = sess.player_a;
           document.getElementById('oppAvatar').textContent = sess.player_a[0].toUpperCase();
           if (data.playerA) renderRankBadge(starsToRank(data.playerA.rank_stars), document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
           document.getElementById('oppRole').textContent = 'HITAM • ' + sess.player_a.toUpperCase();
         }
 
-        // Kalau status selesai (misal auto-resign)
         if (sess.status === 'finished' && !gameOver) {
           gameOver = true;
           if (pollInterval) clearInterval(pollInterval);
@@ -1539,20 +1611,16 @@
           return;
         }
 
-        // Sinkronisasi papan
         if (!gameOver && sess.board_state) {
-           // Bandingin JSON papan lokal sama papan DB
            const localBoardStr = JSON.stringify(board);
            const remoteBoardStr = JSON.stringify(sess.board_state);
            
            if (localBoardStr !== remoteBoardStr) {
-               // Papan beda, update papan lokal
                board = sess.board_state;
                turn = sess.turn;
                selected = null; validMoves = [];
                renderBoard();
                
-               // Cek kalau papan berubah jadi Checkmate
                if (isCheckmate(turn)) {
                    gameOver = true;
                    const winner = turn === 'w' ? 'black' : 'white';
@@ -1564,13 +1632,10 @@
            }
         }
       } catch(e) { console.warn('Sync error:', e); }
-    }, 1500); // 1.5 detik
+    }, 1500); 
   }
 
-  /* =========================================================
-     START GAME
-     ========================================================= */
-  function startGame(selectedMode) {
+  async function startGame(selectedMode) {
     mode = selectedMode;
     gameOver = false;
     history = [];
@@ -1594,7 +1659,6 @@
     document.getElementById('myName').textContent = myName;
     document.getElementById('myAvatar').textContent = (myName[0] || '♔').toUpperCase();
     
-    // Matiin Undo di Rank & Multiplayer
     const undoBtn = document.getElementById('undoBtn');
     undoBtn.disabled = (mode === 'rank' || isMultiplayer);
     undoBtn.title = (mode === 'rank' || isMultiplayer) ? 'Tidak tersedia' : 'Undo';
@@ -1616,9 +1680,24 @@
       document.getElementById(id).classList.remove('show');
     });
 
-    // Kalau multiplayer, mulai polling
     if (isMultiplayer) {
       startMultiplayerPolling();
+      
+      // === AMBIL TOKEN AGORA DARI API ===
+      try {
+          const resTok = await fetchAPI('/settings');
+          if (resTok.ok) {
+              const setData = await resTok.json();
+              AGORA_TOKEN = setData.agora_token || "";
+          }
+      } catch(e) {}
+      
+      // Nyoba join voice kalau tokennya ada
+      if (AGORA_TOKEN) {
+          initAgora(currentRoomCode);
+      } else {
+          showToast('⚠️ Token Voice kosong. Minta admin isi di Dashboard.', 'error');
+      }
     }
   }
 
@@ -1645,9 +1724,6 @@
     document.getElementById('inviteStatus').style.display = 'none';
   });
 
-  /* =========================================================
-     BY ONE INVITE FLOW (LAMA)
-     ========================================================= */
   document.getElementById('sendInvite').addEventListener('click', async () => {
     const input = document.getElementById('friendInput');
     const uname = input.value.trim();
@@ -1670,17 +1746,14 @@
 
       showInviteStatus('✅ Undangan dikirim ke <b>' + uname + '</b>!', false);
       
-      // Pindah ke waiting modal
       setTimeout(() => {
         document.getElementById('inviteModal').classList.remove('show');
         document.getElementById('waitingModal').classList.add('show');
         document.getElementById('waitingText').textContent = 'Menunggu ' + uname + ' menerima undangan...';
         
-        // Simulasi AI (biar tetap bisa lanjut walau temen gak respon)
         setTimeout(() => {
           document.getElementById('waitingStatus').innerHTML = '✅ <span style="color:var(--green)">' + uname + ' siap!</span><br>Memulai pertandingan...';
           setTimeout(() => {
-            // Lempar ke room multiplayer
             window.location.href = `game.html?room=${data.roomCode}`;
           }, 1200);
         }, 2500);
@@ -1715,9 +1788,6 @@
     if (e.key === 'Enter') document.getElementById('sendInvite').click();
   });
 
-  /* =========================================================
-     UNDO, EXIT, FLIP, RESIGN, DRAW
-     ========================================================= */
   document.getElementById('undoBtn').addEventListener('click', () => {
     if (mode === 'rank' || isMultiplayer) { showToast('❌ Tidak bisa undo di mode ini!', 'error'); return; }
     if (history.length === 0) { showToast('❌ Tidak ada langkah untuk di-undo', 'error'); return; }
@@ -1739,6 +1809,7 @@
   });
 
   document.getElementById('confirmExit').addEventListener('click', () => {
+    leaveAgora();
     window.location.href = 'home.html';
   });
 
@@ -1806,12 +1877,10 @@
 
   document.getElementById('goHome').addEventListener('click', () => {
     if (pollInterval) clearInterval(pollInterval);
+    leaveAgora();
     window.location.href = 'home.html';
   });
 
-  /* =========================================================
-     TOAST
-     ========================================================= */
   let toastTimer;
   function showToast(msg, type = '') {
     const t = document.getElementById('toast');
@@ -1821,26 +1890,20 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
   }
 
-  /* =========================================================
-     [UPDATE MULTIPLAYER 3] INIT & CEK URL
-     ========================================================= */
   fetchUserData();
 
   setTimeout(async () => {
-    // Kalau ada ?room=, berarti masuk mode multiplayer
     if (urlRoom) {
       isMultiplayer = true;
       currentRoomCode = urlRoom;
       mode = 'byone';
       
-      // Tampilin profil lawan & sinkron papan awal
       try {
         const res = await fetchAPI(`/game/state?room=${currentRoomCode}`);
         if (!res.ok) throw new Error('Room tidak ditemukan');
         const data = await res.json();
         const sess = data.session;
         
-        // Tentukan siapa lawannya
         if (sess.player_a.toLowerCase() === CURRENT_USER.toLowerCase()) {
             opponentName = sess.player_b;
             document.getElementById('oppRole').textContent = 'HITAM • ' + sess.player_b.toUpperCase();
@@ -1851,10 +1914,8 @@
             if (data.playerA) renderRankBadge(starsToRank(data.playerA.rank_stars), document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
         }
         
-        myColor = 'w'; // Player A selalu putih (bisa disesuaikan)
+        myColor = 'w'; 
         document.getElementById('myRole').textContent = 'PUTIH • KAMU';
-        
-        // Timpa board lokal pake board dari DB
         board = sess.board_state;
         turn = sess.turn;
         
@@ -1867,7 +1928,6 @@
       return;
     }
 
-    // Kalau gak ada room, jalanin kayak biasa (classic/rank)
     if (urlMode === 'classic') {
       opponentName = 'AI (Classic)';
       document.getElementById('oppRole').textContent = 'HITAM • AI';
@@ -1882,4 +1942,4 @@
   }, 500);
 </script>
 </body>
-</html>
+ </html>
