@@ -268,6 +268,9 @@
   .action-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,215,0,0.4); }
   .action-btn.danger { background: rgba(255,60,60,0.1); border-color: rgba(255,60,60,0.3); color: #ff7a7a; }
   .action-btn.danger:hover { background: rgba(255,60,60,0.2); border-color: var(--red); }
+  .action-btn.primary { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; border: none; }
+  .action-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(255,215,0,0.4); }
+  
   .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
 
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 4px; }
@@ -414,6 +417,21 @@
 
       <!-- SETTINGS -->
       <div class="tab-panel" id="panel-settings">
+        
+        <!-- FITUR BARU: AGORA TOKEN -->
+        <div class="settings-card">
+          <div class="settings-title">🎙️ VOICE CHAT (AGORA)</div>
+          <div class="settings-desc">Ganti token Agora di sini tiap 24 jam. Token ini dipake buat On Mic pas mode By One.</div>
+          
+          <div class="form-group">
+            <label class="form-label">Agora Token</label>
+            <input type="text" class="form-input" id="agoraTokenInput" placeholder="Paste token 007eJx... di sini">
+          </div>
+          <div class="btn-group">
+            <button class="action-btn primary" id="saveAgoraBtn">💾 SIMPAN TOKEN</button>
+          </div>
+        </div>
+
         <div class="settings-card">
           <div class="settings-title">📊 STATISTIK</div>
           <div class="settings-desc">Ringkasan data game saat ini.</div>
@@ -613,7 +631,6 @@
     ADMIN_KEY = key;
     
     try {
-      // Test key dengan fetch admin/users
       const res = await fetch(`${API_URL}/admin/users`, { headers: { 'X-Admin-Key': key } });
       if (res.status === 401) throw new Error('Kunci salah!');
       
@@ -632,7 +649,6 @@
 
   adminKeyInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginBtn.click(); });
 
-  // Auto login kalau session ada
   if (ADMIN_KEY) {
     loginScreen.style.display = 'none';
     appContainer.classList.add('show');
@@ -651,19 +667,57 @@
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.getElementById('panel-' + currentTab).classList.add('active');
       
-      // Auto refresh data kalau pindah tab
       if (currentTab === 'users') loadUsers();
       if (currentTab === 'boards' || currentTab === 'pieces') loadShop();
+      if (currentTab === 'settings') loadAgoraToken();
     });
   });
 
-  /* =========================================================
-     LOAD ALL DATA
-     ========================================================= */
   function loadAllData() {
     loadUsers();
     loadShop();
+    loadAgoraToken(); // Load token pas pertama buka
   }
+
+  /* =========================================================
+     FITUR: AGORA TOKEN
+     ========================================================= */
+  async function loadAgoraToken() {
+    try {
+      // Nembak API publik buat liat token sekarang (buat nampilin di input)
+      const res = await fetch(`${API_URL}/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('agoraTokenInput').value = data.agora_token || '';
+      }
+    } catch (e) {
+      console.warn('Gagal load token', e);
+    }
+  }
+
+  document.getElementById('saveAgoraBtn').addEventListener('click', async () => {
+    const token = document.getElementById('agoraTokenInput').value.trim();
+    if (!token) return showToast('Token gak boleh kosong!', true);
+
+    const btn = document.getElementById('saveAgoraBtn');
+    btn.disabled = true; btn.textContent = 'MENYIMPAN...';
+
+    try {
+      const res = await fetchAdminAPI('/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agora_token: token })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal simpan');
+
+      showToast('✅ Token Agora berhasil diupdate!');
+    } catch (e) {
+      showToast('❌ ' + e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 SIMPAN TOKEN';
+    }
+  });
 
   /* =========================================================
      USERS
@@ -765,7 +819,7 @@
 
       showToast('✅ Data user diupdate!');
       userModal.classList.remove('show');
-      loadUsers(); // Reload
+      loadUsers(); 
     } catch (e) {
       showToast('❌ ' + e.message, true);
     } finally {
@@ -821,7 +875,6 @@
         row.appendChild(lock);
       }
 
-      // preview
       const prev = document.createElement('div');
       prev.className = 'item-preview ' + (category === 'board' ? 'board-preview' : 'piece-preview');
       
@@ -838,10 +891,8 @@
       }
       row.appendChild(prev);
 
-      // info
       const info = document.createElement('div');
       info.className = 'item-info';
-      // Buang prefix buat display nama ID aslinya
       const displayId = item.id.replace(/^board_/, '').replace(/^piece_/, '');
       info.innerHTML = `
         <div class="item-name">${item.name} <span class="item-id">${displayId}</span></div>
@@ -850,7 +901,6 @@
       `;
       row.appendChild(info);
 
-      // actions
       const actions = document.createElement('div');
       actions.className = 'item-actions';
 
@@ -889,7 +939,7 @@
       document.getElementById('modalTitle').textContent = 'Edit ' + (category === 'board' ? 'Papan' : 'Bidak');
       document.getElementById('modalSub').textContent = 'ID: ' + item.id;
       document.getElementById('fId').value = item.id.replace(/^board_/, '').replace(/^piece_/, '');
-      document.getElementById('fId').disabled = true; // ID gak bisa diedit
+      document.getElementById('fId').disabled = true;
       document.getElementById('fName').value = item.name;
       document.getElementById('fDesc').value = item.description || '';
       document.getElementById('fPrice').value = item.price;
@@ -959,13 +1009,7 @@
     if (!/^[a-z0-9_]+$/.test(id)) return showToast('ID hanya huruf kecil, angka, underscore!', true);
     if (!name) return showToast('Nama wajib diisi!', true);
 
-    const payload = {
-      id: id,
-      category: formMode,
-      name: name,
-      description: desc,
-      price: price
-    };
+    const payload = { id, category: formMode, name, description: desc, price };
 
     if (formMode === 'board') {
       payload.light = document.getElementById('fLightColor').value;
@@ -1020,7 +1064,6 @@
 
   document.getElementById('okConfirm').addEventListener('click', async () => {
     if (!deleteTargetItem) return;
-    
     try {
       const res = await fetchAdminAPI('/admin/shop/delete', {
         method: 'POST',
@@ -1099,4 +1142,4 @@
 </script>
 
 </body>
-</html>
+ </html>
