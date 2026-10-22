@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Loading...</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0a0a1a;
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, #1a1a2e 25%, transparent 25%),
+      linear-gradient(-45deg, #1a1a2e 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1a1a2e 75%),
+      linear-gradient(-45deg, transparent 75%, #1a1a2e 75%);
+    background-size: 60px 60px;
+    background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
+    opacity: 0.4;
+    animation: bgMove 20s linear infinite;
+  }
+
+  @keyframes bgMove {
+    from { background-position: 0 0, 0 30px, 30px -30px, -30px 0px; }
+    to { background-position: 60px 60px, 60px 90px, 90px 30px, 30px 60px; }
+  }
+
+  .loading-container {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .chess-loader {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 40px;
+    font-size: 60px;
+  }
+
+  .piece {
+    animation: bounce 1.2s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+  }
+
+  .piece:nth-child(1) { animation-delay: 0s; }
+  .piece:nth-child(2) { animation-delay: 0.15s; }
+  .piece:nth-child(3) { animation-delay: 0.3s; }
+  .piece:nth-child(4) { animation-delay: 0.45s; }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-25px) rotate(5deg); }
+  }
+
+  .title {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite;
+    margin-bottom: 15px;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+  }
+
+  @keyframes shine {
+    to { background-position: 200% center; }
+  }
+
+  .subtitle {
+    color: #8888aa;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 50px;
+  }
+
+  .progress-box {
+    width: 320px;
+    margin: 0 auto 20px;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+    background-size: 200% auto;
+    border-radius: 20px;
+    animation: shine 2s linear infinite;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    transition: width 0.3s ease;
+  }
+
+  .percent {
+    color: #ffd700;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 12px;
+    letter-spacing: 2px;
+  }
+
+  .loading-text {
+    color: #aaaacc;
+    font-size: 13px;
+    letter-spacing: 1px;
+    margin-top: 25px;
+    min-height: 20px;
+  }
+
+  .fade-out {
+    animation: fadeOut 0.8s forwards;
+  }
+
+  @keyframes fadeOut {
+    to { opacity: 0; transform: scale(1.1); }
+  }
+
+  @media (max-width: 500px) {
+    .title { font-size: 32px; letter-spacing: 4px; }
+    .chess-loader { font-size: 40px; }
+    .progress-box { width: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-container" id="loader">
+
+  <div class="chess-loader">
+    <div class="piece">♞</div>
+    <div class="piece">♜</div>
+    <div class="piece">♛</div>
+    <div class="piece">♚</div>
+  </div>
+
+  <h1 class="title">CHESS</h1>
+  <p class="subtitle">The Ultimate Battle</p>
+
+  <div class="progress-box">
+    <div class="progress-track">
+      <div class="progress-bar" id="bar"></div>
+    </div>
+    <p class="percent" id="percent">0%</p>
+  </div>
+
+  <p class="loading-text" id="status">Memuat papan catur...</p>
+
+</div>
+
+<script>
+  const bar = document.getElementById('bar');
+  const percent = document.getElementById('percent');
+  const status = document.getElementById('status');
+  const loader = document.getElementById('loader');
+
+  const messages = [
+    { p: 15, t: 'Memuat papan catur...' },
+    { p: 35, t: 'Menyiapkan bidak...' },
+    { p: 55, t: 'Mengatur strategi...' },
+    { p: 75, t: 'Menghubungkan pemain...' },
+    { p: 90, t: 'Hampir selesai...' },
+    { p: 100, t: 'Siap bertarung! ♟️' }
+  ];
+
+  let index = 0;
+
+  function step() {
+    if (index >= messages.length) {
+      setTimeout(() => {
+        loader.classList.add('fade-out');
+        setTimeout(() => {
+          // CEK SESI LOGIN (SESSION STORAGE)
+          const sessionUser = sessionStorage.getItem('chessUser');
+          const offlineMode = localStorage.getItem('chessOfflineMode') === 'true';
+          
+          if (sessionUser || offlineMode) {
+            // Kalau udah login atau mode tamu, langsung ke home
+            window.location.href = 'home.html';
+          } else {
+            // Kalau belum login, ke halaman login
+            window.location.href = 'login.html';
+          }
+        }, 800);
+      }, 600);
+      return;
+    }
+
+    const m = messages[index];
+    bar.style.width = m.p + '%';
+    percent.textContent = m.p + '%';
+    status.textContent = m.t;
+
+    index++;
+    setTimeout(step, 300 + Math.random() * 300);
+  }
+
+  // Start
+  setTimeout(step, 300);
+</script>
+
+</body>
+</html>

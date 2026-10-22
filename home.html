@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chess - Home</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --gold: #ffd700;
+    --gold-dark: #b8860b;
+    --bg-dark: #0a0a1a;
+    --panel: rgba(20, 20, 40, 0.85);
+    --border: rgba(255, 215, 0, 0.25);
+    --green: #4dff88;
+    --red: #ff4d4d;
+    --cyan: #00e5ff;
+    --pink: #ff00aa;
+    
+    --text-main: #ffffff;
+    --text-sub: #8888aa;
+    --bg-body: #0a0a1a;
+  }
+
+  body.light-theme {
+    --bg-dark: #f0f0f0;
+    --panel: rgba(255, 255, 255, 0.9);
+    --border: rgba(0, 0, 0, 0.2);
+    --text-main: #000000;
+    --text-sub: #555555;
+    --bg-body: #ffffff;
+  }
+
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    height: 100vh;
+    height: 100dvh;
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--bg-body);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-main);
+    isolation: isolate;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, #12122a 25%, transparent 25%),
+      linear-gradient(-45deg, #12122a 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #12122a 75%),
+      linear-gradient(-45deg, transparent 75%, #12122a 75%);
+    background-size: 70px 70px;
+    background-position: 0 0, 0 35px, 35px -35px, -35px 0px;
+    opacity: 0.5;
+    animation: bgMove 40s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  body.light-theme::before { opacity: 0.1; }
+
+  @keyframes bgMove {
+    from { background-position: 0 0, 0 35px, 35px -35px, -35px 0px; }
+    to { background-position: 70px 70px, 70px 105px, 105px 35px, 35px 70px; }
+  }
+
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .orb-1 { width: 400px; height: 400px; background: #ffd700; top: -120px; left: -100px; animation: float 12s ease-in-out infinite; }
+  .orb-2 { width: 350px; height: 350px; background: #6a00ff; bottom: -100px; right: -80px; animation: float 15s ease-in-out infinite reverse; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0,0); }
+    50% { transform: translate(40px, 30px); }
+  }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px 18px;
+    gap: 10px;
+    flex-shrink: 0;
+    width: 100%;
+  }
+
+  .profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    cursor: pointer;
+    padding: 4px 8px 4px 4px;
+    border-radius: 30px;
+    transition: 0.2s;
+    flex-shrink: 1;
+    max-width: 100%;
+  }
+  .profile:hover { background: rgba(255,215,0,0.08); }
+
+  .avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    position: relative;
+    flex-shrink: 0;
+    color: #1a1a1a;
+    font-weight: 900;
+  }
+
+  .avatar::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 0; }
+  }
+
+  .player-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .player-info .name {
+    font-weight: 700; font-size: 14px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;
+  }
+
+  .player-info .level {
+    font-size: 10px; color: var(--text-sub); letter-spacing: 0.5px;
+    white-space: nowrap; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .player-info .level .stars { color: var(--gold); font-size: 10px; letter-spacing: 1px; }
+
+  .exp-bar-wrap { width: 100%; max-width: 160px; margin-top: 4px; }
+  .exp-bar-track {
+    height: 5px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);
+  }
+  body.light-theme .exp-bar-track { background: rgba(0,0,0,0.1); }
+  
+  .exp-bar-fill {
+    height: 100%; width: 0%; background: linear-gradient(90deg, #00e5ff, #ff00aa); border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 8px rgba(0,229,255,0.6);
+  }
+  .exp-text {
+    display: flex; justify-content: space-between; font-size: 8px; color: var(--text-sub);
+    margin-top: 3px; letter-spacing: 0.5px; font-weight: 600; gap: 6px;
+  }
+  .exp-text b { color: var(--cyan); }
+
+  .logout-btn {
+    width: 32px; height: 32px; border-radius: 10px; background: rgba(255, 60, 60, 0.12);
+    border: 1px solid rgba(255, 60, 60, 0.3); color: #ff7a7a; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; transition: 0.2s; flex-shrink: 0;
+  }
+  .logout-btn:hover { background: rgba(255, 60, 60, 0.25); border-color: #ff4d4d; color: #fff; transform: scale(1.08); }
+
+  .topbar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; max-width: 100%; }
+  .top-controls { display: flex; gap: 6px; align-items: center; }
+
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 11px; background: var(--panel); border: 1px solid var(--border);
+    color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: 0.2s; backdrop-filter: blur(10px); position: relative; flex-shrink: 0;
+  }
+  .icon-btn:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,215,0,0.3); }
+  .icon-btn.active { background: rgba(255,215,0,0.15); border-color: var(--gold); color: var(--gold); }
+
+  .notif-dot {
+    position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--red); border: 2px solid var(--bg-body); animation: notifPulse 1.5s infinite;
+  }
+  .notif-dot.hidden { display: none; }
+  @keyframes notifPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,60,60,0.7); }
+    50% { transform: scale(1.2); box-shadow: 0 0 0 6px rgba(255,60,60,0); }
+  }
+
+  .coin-box {
+    display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border);
+    padding: 7px 14px; border-radius: 30px; backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4); flex-shrink: 0;
+  }
+
+  .coin-icon {
+    width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3a0, #ffd700 40%, #b8860b);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.7), inset 0 -2px 3px rgba(0,0,0,0.3);
+    position: relative; animation: coinSpin 3s ease-in-out infinite; flex-shrink: 0;
+  }
+  .coin-icon::before {
+    content: '♛'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #8a6d00;
+  }
+  @keyframes coinSpin { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
+
+  .coin-amount { font-weight: 800; color: var(--gold); font-size: 15px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); transition: transform 0.2s; white-space: nowrap; }
+
+  /* ===== MISSION WIDGET ===== */
+  .mission-widget {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 9px 12px;
+    backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.4); width: 210px; max-width: 100%;
+    cursor: pointer; transition: 0.2s; flex-shrink: 0;
+  }
+  .mission-widget:hover { border-color: var(--gold); box-shadow: 0 4px 25px rgba(255, 215, 0, 0.25); }
+
+  .mission-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; gap: 8px; }
+  .mission-title { font-size: 10px; font-weight: 800; letter-spacing: 1.2px; color: var(--gold); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .mission-reward { font-size: 10px; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .mission-reward .mini-coin { width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3a0, #ffd700 40%, #b8860b); display: inline-block; flex-shrink: 0; }
+
+  .mission-progress { height: 5px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
+  .mission-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd700, #ff8c00); border-radius: 10px; transition: width 0.4s; box-shadow: 0 0 8px rgba(255,215,0,0.6); }
+
+  .mission-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: var(--text-sub); letter-spacing: 0.5px; gap: 8px; }
+  .mission-timer { color: #ff8c00; font-weight: 700; white-space: nowrap; }
+
+  /* ===== MAIN ===== */
+  .main {
+    flex: 1; position: relative; z-index: 5; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 8px 20px; min-height: 0; overflow: hidden; gap: 0;
+  }
+
+  .title {
+    font-size: 28px; font-weight: 900; letter-spacing: 6px;
+    background: linear-gradient(90deg, #ffd700, #fff8dc, #ffd700); background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite; margin-bottom: 16px; text-align: center; flex-shrink: 0; line-height: 1.2;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+
+  .board-card {
+    position: relative; width: 240px; height: 240px; max-width: min(65vw, 45vh); max-height: min(65vw, 45vh);
+    aspect-ratio: 1; border-radius: 20px; background: var(--panel); border: 2px solid var(--border); padding: 12px;
+    backdrop-filter: blur(12px); box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255, 215, 0, 0.1);
+    margin-bottom: 20px; cursor: pointer; transition: transform 0.3s; flex-shrink: 0;
+  }
+  .board-card:hover { transform: translateY(-6px) scale(1.02); }
+
+  .board-grid {
+    width: 100%; height: 100%; border-radius: 10px; overflow: hidden; display: grid;
+    grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+
+  .cell { display: flex; align-items: center; justify-content: center; line-height: 1; min-width: 0; min-height: 0; overflow: hidden; }
+  .cell .piece { font-size: clamp(10px, 3vw, 16px); transition: transform 0.2s; }
+
+  .board-label {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; font-size: 9px; font-weight: 800;
+    letter-spacing: 1.5px; padding: 4px 12px; border-radius: 20px; white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4); max-width: 90%; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .ai-diff-preview {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800;
+    padding: 5px 12px; border-radius: 20px; letter-spacing: 0.8px; white-space: nowrap; margin-bottom: 14px; flex-shrink: 0;
+  }
+  .ai-diff-preview.easy { background: rgba(77,255,136,0.15); border: 1px solid rgba(77,255,136,0.4); color: #4dff88; }
+  .ai-diff-preview.normal { background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.4); color: var(--gold); }
+  .ai-diff-preview.hard { background: rgba(255,60,60,0.15); border: 1px solid rgba(255,60,60,0.4); color: #ff7a7a; }
+  .ai-diff-preview.hardcore { background: rgba(255,0,170,0.15); border: 1px solid rgba(255,0,170,0.4); color: #ff00aa; }
+
+  .play-btn {
+    position: relative; padding: 14px 56px; font-size: 17px; font-weight: 900; letter-spacing: 4px;
+    color: #1a1a1a; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 50px;
+    cursor: pointer; box-shadow: 0 8px 30px rgba(255, 215, 0, 0.5), inset 0 -3px 0 rgba(0,0,0,0.2);
+    transition: 0.2s; overflow: hidden; font-family: inherit; animation: playPulse 2s ease-in-out infinite; flex-shrink: 0;
+  }
+  .play-btn::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent); animation: sweep 2.5s ease-in-out infinite;
+  }
+  @keyframes sweep { 0% { left: -100%; } 60%, 100% { left: 100%; } }
+  @keyframes playPulse { 0%, 100% { box-shadow: 0 8px 30px rgba(255, 215, 0, 0.5), inset 0 -3px 0 rgba(0,0,0,0.2); } 50% { box-shadow: 0 8px 45px rgba(255, 215, 0, 0.85), inset 0 -3px 0 rgba(0,0,0,0.2); } }
+  .play-btn:hover { transform: translateY(-3px) scale(1.03); }
+  .play-btn:active { transform: translateY(0) scale(0.98); }
+
+  /* ===== BOTTOM BAR ===== */
+  .bottombar {
+    position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 18px; gap: 10px; flex-shrink: 0; width: 100%; flex-wrap: wrap;
+  }
+
+  .bottom-left { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; flex: 1; }
+
+  .bottom-btn {
+    display: flex; align-items: center; gap: 7px; background: var(--panel); border: 1px solid var(--border);
+    padding: 9px 14px; border-radius: 13px; color: var(--text-main); cursor: pointer;
+    backdrop-filter: blur(10px); transition: 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    font-family: inherit; white-space: nowrap; position: relative;
+  }
+  .bottom-btn:hover { border-color: var(--gold); box-shadow: 0 4px 25px rgba(255, 215, 0, 0.3); transform: translateY(-2px); }
+
+  .btn-icon { font-size: 17px; flex-shrink: 0; line-height: 1; }
+  .btn-text { display: flex; flex-direction: column; text-align: left; gap: 1px; }
+  .btn-text .t { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; }
+  .btn-text .s { font-size: 8px; color: var(--text-sub); }
+
+  .mode-box { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .mode-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text-sub); font-weight: 600; padding-right: 4px; }
+
+  .mode-toggle {
+    display: flex; background: var(--panel); border: 1px solid var(--border); border-radius: 13px;
+    padding: 4px; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.4); gap: 2px;
+  }
+
+  .mode-opt {
+    padding: 8px 14px; border-radius: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+    cursor: pointer; color: var(--text-sub); transition: 0.25s; border: none; background: transparent;
+    display: flex; align-items: center; gap: 5px; font-family: inherit; white-space: nowrap;
+  }
+  .mode-opt.active { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4); }
+  .mode-opt:not(.active):hover { color: var(--text-main); }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s; overflow-y: auto;
+  }
+  .modal-overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: linear-gradient(180deg, #1a1a30, #0f0f20); border: 1px solid var(--border); border-radius: 20px;
+    padding: 22px; width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.8); animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative; flex-shrink: 0; margin: auto;
+  }
+  body.light-theme .modal { background: linear-gradient(180deg, #ffffff, #f0f0f0); }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .modal-title {
+    font-size: 17px; font-weight: 900; letter-spacing: 1.5px; color: var(--gold); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px; padding-right: 40px; flex-wrap: wrap;
+  }
+
+  .modal-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 16px; letter-spacing: 0.3px; line-height: 1.4; }
+
+  .modal-close {
+    position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); border: none; color: var(--text-sub); cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; z-index: 2;
+  }
+  .modal-close:hover { background: rgba(255,60,60,0.2); color: #ff7a7a; }
+
+  /* ===== PROFILE MODAL ===== */
+  .profile-big { text-align: center; padding: 8px 0 18px; }
+  .profile-big .avatar { width: 76px; height: 76px; font-size: 34px; margin: 0 auto 12px; }
+  .profile-big .name { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; }
+  .profile-big .username { font-size: 11px; color: var(--text-sub); letter-spacing: 1px; margin-bottom: 14px; }
+
+  .level-big-box {
+    background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(255,0,170,0.08));
+    border: 1px solid rgba(0,229,255,0.3); border-radius: 14px; padding: 14px; margin-bottom: 14px; text-align: center;
+  }
+  .level-big-num {
+    font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #00e5ff, #ff00aa);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; letter-spacing: 2px;
+  }
+  .level-big-label { font-size: 10px; color: var(--text-sub); letter-spacing: 2px; margin-top: 4px; margin-bottom: 10px; font-weight: 700; }
+
+  .rank-big { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.3); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+  .rank-big-name { font-size: 18px; font-weight: 900; color: var(--gold); letter-spacing: 1px; margin-bottom: 6px; text-shadow: 0 0 15px rgba(255,215,0,0.4); }
+  .rank-big-stars { font-size: 18px; color: var(--gold); letter-spacing: 3px; margin-bottom: 6px; }
+  .rank-big-stars .empty { opacity: 0.2; }
+  .rank-big-sub { font-size: 9px; color: var(--text-sub); letter-spacing: 1.5px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat-mini { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 8px; text-align: center; }
+  body.light-theme .stat-mini { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .stat-mini .v { font-size: 18px; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 4px; }
+  .stat-mini .l { font-size: 9px; color: var(--text-sub); letter-spacing: 1px; font-weight: 700; }
+
+  .profile-actions { display: flex; flex-direction: column; gap: 8px; }
+  .profile-actions button {
+    width: 100%; padding: 12px; border-radius: 12px; border: none; font-family: inherit;
+    font-weight: 800; font-size: 12px; letter-spacing: 1.2px; cursor: pointer; transition: 0.2s;
+  }
+  .btn-outline { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12) !important; color: var(--text-main); }
+  body.light-theme .btn-outline { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1) !important; }
+  .btn-outline:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,215,0,0.4) !important; }
+  .btn-danger-outline { background: rgba(255,60,60,0.08); border: 1px solid rgba(255,60,60,0.3) !important; color: #ff7a7a; }
+  .btn-danger-outline:hover { background: rgba(255,60,60,0.18); border-color: var(--red) !important; }
+
+  /* ===== FRIENDS ===== */
+  .friends-tabs { display: flex; gap: 4px; margin-bottom: 14px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 12px; }
+  body.light-theme .friends-tabs { background: rgba(0,0,0,0.05); }
+  .friends-tab {
+    flex: 1; padding: 8px 4px; border: none; background: transparent; color: var(--text-sub);
+    font-size: 9px; font-weight: 700; letter-spacing: 0.3px; border-radius: 9px; cursor: pointer;
+    transition: 0.2s; font-family: inherit; position: relative; display: flex; align-items: center;
+    justify-content: center; gap: 3px; white-space: nowrap;
+  }
+  .friends-tab.active { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; }
+  .tab-count { background: rgba(255,60,60,0.9); color: #fff; font-size: 8px; padding: 1px 4px; border-radius: 8px; font-weight: 800; min-width: 14px; text-align: center; }
+  .friends-tab.active .tab-count { background: #1a1a1a; color: var(--gold); }
+  .tab-count.hidden { display: none; }
+
+  .friends-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .friend-item {
+    display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 12px; transition: 0.2s;
+  }
+  body.light-theme .friend-item { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .friend-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,215,0,0.3); }
+
+  .friend-avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #4a4a60, #1a1a2a);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900;
+    color: #fff; flex-shrink: 0; position: relative; border: 1.5px solid rgba(255,255,255,0.15);
+  }
+  .friend-avatar.online::after {
+    content: ''; position: absolute; bottom: -1px; right: -1px; width: 11px; height: 11px; border-radius: 50%;
+    background: var(--green); border: 2px solid var(--bg-body); box-shadow: 0 0 8px var(--green);
+  }
+
+  .friend-info { flex: 1; min-width: 0; }
+  .friend-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .friend-sub { font-size: 10px; color: var(--text-sub); margin-top: 2px; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .friend-actions { display: flex; gap: 5px; flex-shrink: 0; }
+  .friend-btn {
+    width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12); color: #b0b0d0; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 14px; transition: 0.2s; flex-shrink: 0;
+  }
+  body.light-theme .friend-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: #555; }
+  .friend-btn:hover { background: rgba(255,255,255,0.12); transform: scale(1.08); }
+  .friend-btn.accept { background: rgba(77,255,136,0.15); border-color: rgba(77,255,136,0.4); color: var(--green); }
+  .friend-btn.accept:hover { background: rgba(77,255,136,0.28); box-shadow: 0 0 12px rgba(77,255,136,0.4); }
+  .friend-btn.decline { background: rgba(255,60,60,0.12); border-color: rgba(255,60,60,0.35); color: #ff7a7a; }
+  .friend-btn.decline:hover { background: rgba(255,60,60,0.25); }
+  .friend-btn.rematch { background: rgba(255,215,0,0.12); border-color: rgba(255,215,0,0.35); color: var(--gold); }
+  .friend-btn.rematch:hover { background: rgba(255,215,0,0.25); box-shadow: 0 0 12px rgba(255,215,0,0.3); }
+
+  .empty-list { text-align: center; padding: 30px 16px; color: #55557a; font-size: 12px; letter-spacing: 0.5px; line-height: 1.6; }
+  .empty-list .emo { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.5; }
+
+  .add-friend-box { display: flex; gap: 8px; margin-bottom: 12px; }
+  .add-friend-box input {
+    flex: 1; padding: 10px 12px; background: rgba(0,0,0,0.35); border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 10px; color: var(--text-main); font-size: 12px; font-family: inherit;
+    outline: none; transition: 0.2s; min-width: 0;
+  }
+  body.light-theme .add-friend-box input { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); }
+  .add-friend-box input:focus { border-color: var(--gold); background: rgba(0,0,0,0.5); }
+  .add-friend-box input::placeholder { color: #55557a; }
+  .add-friend-box button {
+    padding: 10px 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #1a1a1a; font-weight: 800; font-size: 11px; letter-spacing: 0.8px; cursor: pointer; transition: 0.2s;
+    font-family: inherit; flex-shrink: 0; white-space: nowrap;
+  }
+  .add-friend-box button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,215,0,0.4); }
+
+  /* ===== LEADERBOARD ===== */
+  .lb-list { display: flex; flex-direction: column; gap: 6px; }
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  body.light-theme .lb-row { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .lb-row.me { background: rgba(255,215,0,0.1); border-color: rgba(255,215,0,0.4); box-shadow: 0 0 15px rgba(255,215,0,0.15); }
+  .lb-row.top1 { background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,140,0,0.1)); border-color: rgba(255,215,0,0.5); }
+  .lb-rank { width: 28px; font-size: 14px; font-weight: 900; color: var(--text-sub); text-align: center; flex-shrink: 0; }
+  .lb-row.top1 .lb-rank { color: var(--gold); font-size: 18px; }
+  .lb-row.top2 .lb-rank { color: #c0c0c0; }
+  .lb-row.top3 .lb-rank { color: #cd7f32; }
+  .lb-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4a4a60, #1a1a2a); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.15); }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-rank-name { font-size: 10px; color: var(--gold); font-weight: 700; letter-spacing: 0.5px; margin-top: 2px; }
+  .lb-stars { font-size: 12px; color: var(--gold); font-weight: 900; flex-shrink: 0; letter-spacing: 0.5px; }
+
+  /* ===== NOTIFICATIONS ===== */
+  .notif-list { display: flex; flex-direction: column; gap: 8px; }
+  .notif-item { display: flex; gap: 10px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); align-items: flex-start; }
+  body.light-theme .notif-item { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .notif-item.unread { background: rgba(255,215,0,0.06); border-color: rgba(255,215,0,0.25); }
+  .notif-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,215,0,0.12); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-text { font-size: 12px; color: var(--text-main); font-weight: 600; margin-bottom: 3px; line-height: 1.4; }
+  .notif-time { font-size: 10px; color: var(--text-sub); letter-spacing: 0.5px; }
+
+  /* ===== SETTINGS ===== */
+  .setting-group { margin-bottom: 12px; }
+  .setting-label { font-size: 10px; letter-spacing: 1.2px; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+  .setting-toggle { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); cursor: pointer; margin-bottom: 8px; gap: 10px; }
+  body.light-theme .setting-toggle { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .setting-toggle:hover { background: rgba(255,255,255,0.08); }
+  .setting-toggle > div:first-child { flex: 1; min-width: 0; }
+  .setting-toggle .st-label { font-size: 12px; font-weight: 700; color: var(--text-main); }
+  .setting-toggle .st-sub { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
+  .switch { width: 40px; height: 22px; border-radius: 12px; background: rgba(255,255,255,0.15); position: relative; transition: 0.2s; flex-shrink: 0; }
+  body.light-theme .switch { background: rgba(0,0,0,0.15); }
+  .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  body.light-theme .switch::after { background: #333; }
+  .switch.on { background: linear-gradient(135deg, #ffd700, #ff8c00); }
+  .switch.on::after { left: 20px; background: #fff; }
+
+  /* ===== INVENTORY ===== */
+  .inv-tabs { display: flex; gap: 8px; margin-bottom: 14px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 12px; }
+  body.light-theme .inv-tabs { background: rgba(0,0,0,0.05); }
+  .inv-tab { flex: 1; padding: 9px; border: none; background: transparent; color: var(--text-sub); font-size: 11px; font-weight: 700; letter-spacing: 1px; border-radius: 9px; cursor: pointer; transition: 0.2s; font-family: inherit; }
+  .inv-tab.active { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; }
+
+  .inv-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .inv-item { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; cursor: pointer; transition: 0.2s; position: relative; text-align: center; min-width: 0; }
+  body.light-theme .inv-item { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .inv-item:hover { border-color: rgba(255,215,0,0.5); transform: translateY(-2px); }
+  .inv-item.equipped { border-color: var(--gold); background: rgba(255, 215, 0, 0.1); box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+  .inv-item.equipped::after { content: '✓'; position: absolute; top: 6px; right: 8px; color: var(--gold); font-weight: 900; font-size: 14px; }
+  .inv-preview { width: 50px; height: 50px; margin: 0 auto 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); }
+  body.light-theme .inv-preview { border-color: rgba(0,0,0,0.15); }
+  .inv-preview.board-preview { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); padding: 0; }
+  .inv-preview.board-preview > div { width: 100%; height: 100%; }
+  .inv-name { font-size: 11px; font-weight: 700; color: var(--text-main); letter-spacing: 0.3px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .inv-badge { font-size: 9px; color: var(--gold); letter-spacing: 0.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .inv-empty { grid-column: 1 / -1; text-align: center; padding: 30px 10px; color: var(--text-sub); font-size: 12px; letter-spacing: 0.5px; }
+  .inv-empty .emo { font-size: 32px; display: block; margin-bottom: 10px; opacity: 0.5; }
+
+  /* ===== MISSION MODAL ===== */
+  .mission-card { background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.25); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .mission-card-title { font-size: 13px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .mission-card-desc { font-size: 11px; color: var(--text-sub); margin-bottom: 12px; }
+  .mission-card-reward { font-size: 12px; font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 4px; margin-bottom: 12px; }
+  .mission-card-reward .mini-coin { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3a0, #ffd700 40%, #b8860b); display: inline-block; flex-shrink: 0; }
+  .mission-claim-btn { width: 100%; padding: 11px; border-radius: 10px; border: none; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; font-weight: 900; font-size: 11px; letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; font-family: inherit; }
+  .mission-claim-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,215,0,0.4); }
+  .mission-claim-btn:disabled { background: rgba(255,255,255,0.08); color: #55557a; cursor: not-allowed; }
+  .mission-timer-big { text-align: center; font-size: 10px; color: #ff8c00; letter-spacing: 1px; font-weight: 700; margin-top: 6px; }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; padding: 11px 22px;
+    border-radius: 30px; font-weight: 800; font-size: 12px; letter-spacing: 0.8px;
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.5); z-index: 999; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none; max-width: calc(100vw - 40px); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
+  .toast.success { background: linear-gradient(135deg, #4dff88, #22cc66); color: #0a0a1a; }
+  .toast.levelup { background: linear-gradient(135deg, #00e5ff, #ff00aa); color: #fff; box-shadow: 0 10px 40px rgba(0,229,255,0.6); font-size: 13px; }
+
+  /* ===== CONFIRM ===== */
+  .confirm-box { text-align: center; padding: 10px 0; }
+  .confirm-icon { font-size: 48px; margin-bottom: 14px; }
+  .confirm-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px; }
+  .confirm-text { font-size: 13px; color: var(--text-sub); margin-bottom: 22px; line-height: 1.5; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-actions button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 800; font-size: 12px; letter-spacing: 1.2px; cursor: pointer; transition: 0.2s; font-family: inherit; }
+  .btn-cancel { background: rgba(255,255,255,0.08); color: var(--text-sub); }
+  body.light-theme .btn-cancel { background: rgba(0,0,0,0.08); color: #555; }
+  .btn-cancel:hover { background: rgba(255,255,255,0.15); }
+  .btn-danger { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
+  .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,60,60,0.5); }
+  .btn-primary { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,215,0,0.5); }
+
+  /* ===== POPUP INVITE GAME ===== */
+  .invite-popup {
+    position: fixed; top: 14px; right: 14px; width: 320px; max-width: calc(100vw - 28px);
+    background: linear-gradient(180deg, #1a1a30, #0f0f20); border: 1px solid var(--gold);
+    border-radius: 16px; padding: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(255,215,0,0.3);
+    z-index: 200; transform: translateX(400px); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  body.light-theme .invite-popup { background: linear-gradient(180deg, #ffffff, #f0f0f0); }
+  .invite-popup.show { transform: translateX(0); }
+  .invite-popup-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .invite-popup-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,215,0,0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .invite-popup-title { font-size: 13px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; }
+  .invite-popup-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .invite-popup-text { font-size: 12px; color: var(--text-sub); margin-bottom: 12px; line-height: 1.4; }
+  .invite-popup-actions { display: flex; gap: 8px; }
+  .invite-popup-actions button { flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: 800; font-size: 11px; letter-spacing: 1px; cursor: pointer; transition: 0.2s; font-family: inherit; }
+
+  @media (max-width: 768px) {
+    .mission-widget { width: 190px; }
+    .player-info .name { max-width: 120px; }
+    .exp-bar-wrap { max-width: 140px; }
+  }
+  @media (max-width: 640px) {
+    .topbar { padding: 10px 12px; gap: 8px; }
+    .avatar { width: 40px; height: 40px; font-size: 18px; }
+    .player-info .name { font-size: 13px; max-width: 100px; }
+    .player-info .level { font-size: 9px; gap: 6px; }
+    .exp-bar-wrap { max-width: 120px; }
+    .exp-text { font-size: 7px; }
+    .coin-box { padding: 6px 10px; gap: 6px; }
+    .coin-amount { font-size: 13px; }
+    .coin-icon { width: 20px; height: 20px; }
+    .icon-btn { width: 32px; height: 32px; font-size: 14px; border-radius: 10px; }
+    .top-controls { gap: 5px; }
+    .logout-btn { width: 30px; height: 30px; font-size: 13px; }
+    .mission-widget { width: 100%; padding: 8px 10px; }
+    .mission-title { font-size: 9px; }
+    .mission-reward { font-size: 9px; }
+    .mission-bottom { font-size: 8px; }
+    .title { font-size: 22px; letter-spacing: 4px; margin-bottom: 12px; }
+    .board-card { width: 200px; height: 200px; margin-bottom: 14px; padding: 10px; }
+    .board-label { font-size: 8px; padding: 3px 10px; }
+    .ai-diff-preview { font-size: 9px; padding: 4px 10px; margin-bottom: 10px; }
+    .play-btn { padding: 12px 46px; font-size: 15px; letter-spacing: 3px; }
+    .bottombar { padding: 10px 12px; gap: 8px; }
+    .bottom-left { gap: 5px; }
+    .bottom-btn { padding: 8px 11px; border-radius: 12px; gap: 6px; }
+    .btn-icon { font-size: 15px; }
+    .btn-text .t { font-size: 10px; }
+    .btn-text .s { font-size: 7px; }
+    .mode-opt { padding: 7px 11px; font-size: 10px; }
+    .mode-label { font-size: 8px; }
+    .modal { padding: 18px; }
+    .modal-title { font-size: 15px; }
+  }
+  @media (max-width: 480px) {
+    .topbar { flex-direction: column; align-items: stretch; padding: 10px; gap: 8px; }
+    .profile { justify-content: flex-start; padding-right: 40px; position: relative; }
+    .logout-btn { position: absolute; top: 0; right: 0; }
+    .exp-bar-wrap { max-width: 100%; }
+    .topbar-right { width: 100%; align-items: stretch; gap: 6px; }
+    .top-controls { justify-content: center; width: 100%; order: 1; }
+    .coin-box { justify-content: center; order: 2; }
+    .mission-widget { width: 100%; order: 3; }
+    .title { font-size: 20px; letter-spacing: 3px; margin-bottom: 10px; }
+    .board-card { width: min(70vw, 40vh); height: min(70vw, 40vh); margin-bottom: 12px; }
+    .cell .piece { font-size: clamp(10px, 2.8vw, 14px); }
+    .play-btn { padding: 11px 40px; font-size: 14px; letter-spacing: 2px; }
+    .bottombar { flex-direction: column; align-items: stretch; padding: 8px 10px 12px; gap: 8px; }
+    .bottom-left { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .bottom-btn { justify-content: center; padding: 8px 6px; min-width: 0; }
+    .btn-text .s { display: none; }
+    .mode-box { align-items: stretch; width: 100%; }
+    .mode-label { text-align: center; padding-right: 0; }
+    .mode-toggle { justify-content: center; width: 100%; }
+    .mode-opt { flex: 1; justify-content: center; padding: 8px 6px; }
+    .modal { padding: 16px; }
+    .invite-popup { top: 10px; right: 10px; left: 10px; width: auto; }
+  }
+  @media (max-width: 360px) {
+    .avatar { width: 36px; height: 36px; font-size: 16px; }
+    .player-info .name { font-size: 12px; max-width: 90px; }
+    .player-info .level { font-size: 8px; }
+    .icon-btn { width: 30px; height: 30px; font-size: 13px; }
+    .coin-box { padding: 5px 8px; }
+    .coin-amount { font-size: 12px; }
+    .title { font-size: 18px; letter-spacing: 2px; }
+    .btn-text .t { font-size: 9px; }
+    .mode-opt { font-size: 9px; padding: 7px 4px; }
+  }
+  @media (max-height: 700px) and (orientation: landscape) {
+    .topbar { padding: 8px 14px; }
+    .mission-widget { display: none; }
+    .title { font-size: 18px; margin-bottom: 8px; }
+    .board-card { width: min(45vh, 200px); height: min(45vh, 200px); margin-bottom: 10px; }
+    .ai-diff-preview { margin-bottom: 8px; }
+    .play-btn { padding: 10px 36px; font-size: 13px; }
+    .bottombar { padding: 8px 14px; }
+  }
+  @media (max-height: 560px) {
+    .title { font-size: 16px; margin-bottom: 8px; }
+    .board-card { width: 150px; height: 150px; margin-bottom: 10px; }
+    .cell .piece { font-size: 11px; }
+    .play-btn { padding: 10px 32px; font-size: 13px; }
+    .player-info .level { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Audio SFX -->
+  <audio id="sfxClick" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="topbar">
+    <div class="profile" id="profileBtn">
+      <div class="avatar" id="avatarEl">♚</div>
+      <div class="player-info">
+        <div class="name" id="playerName">Memuat...</div>
+        <div class="level" id="playerLevel">
+          <span id="levelText">LV. 1 • ELO 1200</span>
+          <span class="stars" id="miniStars">★☆☆☆</span>
+        </div>
+        <div class="exp-bar-wrap">
+          <div class="exp-bar-track">
+            <div class="exp-bar-fill" id="expBarFill"></div>
+          </div>
+          <div class="exp-text">
+            <span>EXP: <b id="expText">0/10</b></span>
+            <span id="nextLevelText">Lv. 2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="top-controls">
+        <button class="icon-btn" id="friendsBtn" title="Teman">
+          👥
+          <span class="notif-dot hidden" id="friendsDot"></span>
+        </button>
+        <button class="icon-btn" id="notifBtn" title="Notifikasi">
+          🔔
+          <span class="notif-dot hidden" id="notifDot"></span>
+        </button>
+        <button class="icon-btn" id="leaderboardBtn" title="Leaderboard">🏆</button>
+        <button class="icon-btn" id="themeBtn" title="Ganti Tema">🌓</button>
+        <button class="logout-btn" id="logoutBtn" title="Logout">⏻</button>
+      </div>
+
+      <div class="coin-box">
+        <div class="coin-icon"></div>
+        <div class="coin-amount" id="coinAmount">0</div>
+      </div>
+
+      <div class="mission-widget" id="missionWidget">
+        <div class="mission-head">
+          <div class="mission-title">🎯 MISI</div>
+          <div class="mission-reward">
+            <span class="mini-coin"></span>
+            <span id="missionRewardTxt">1000</span>
+          </div>
+        </div>
+        <div class="mission-progress">
+          <div class="mission-progress-fill" id="missionFill"></div>
+        </div>
+        <div class="mission-bottom">
+          <span id="missionProgressTxt">Main 0/2</span>
+          <span class="mission-timer" id="missionTimer">10:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <h1 class="title">CHESS ARENA</h1>
+
+    <div class="board-card">
+      <div class="board-label" id="boardLabel">BOARD PREVIEW</div>
+      <div class="board-grid" id="boardGrid"></div>
+    </div>
+
+    <div class="ai-diff-preview easy" id="aiDiffPreview">
+      🟢 AI: MUDAH
+    </div>
+
+    <button class="play-btn" id="playBtn">MULAI</button>
+  </div>
+
+  <!-- ===== BOTTOM BAR ===== -->
+  <div class="bottombar">
+    <div class="bottom-left">
+      <button class="bottom-btn" id="shopBtn">
+        <span class="btn-icon">🛒</span>
+        <span class="btn-text">
+          <span class="t">SHOP</span>
+          <span class="s">Bidak & Papan</span>
+        </span>
+      </button>
+      <button class="bottom-btn" id="invBtn">
+        <span class="btn-icon">🎒</span>
+        <span class="btn-text">
+          <span class="t">INVENTORY</span>
+          <span class="s">Item kamu</span>
+        </span>
+      </button>
+      <button class="bottom-btn" id="settingsBtn">
+        <span class="btn-icon">⚙️</span>
+        <span class="btn-text">
+          <span class="t">SETELAN</span>
+          <span class="s">Pengaturan</span>
+        </span>
+      </button>
+    </div>
+
+    <div class="mode-box">
+      <div class="mode-label">MODE</div>
+      <div class="mode-toggle">
+        <button class="mode-opt active" data-mode="classic">⚔️ Classic</button>
+        <button class="mode-opt" data-mode="rank">🏆 Rank</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: PROFILE ===== -->
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal">
+      <button class="modal-close" data-close="profileModal">✕</button>
+      <div class="profile-big">
+        <div class="avatar" id="profAvatar">P</div>
+        <div class="name" id="profName">Player One</div>
+        <div class="username" id="profUsername">@player</div>
+      </div>
+
+      <div class="level-big-box">
+        <div class="level-big-num" id="profLevelNum">1</div>
+        <div class="level-big-label">LEVEL</div>
+        <div class="exp-bar-track">
+          <div class="exp-bar-fill" id="profExpFill"></div>
+        </div>
+        <div class="exp-text" style="margin-top:6px;">
+          <span>EXP: <b id="profExpText">0/10</b></span>
+          <span id="profNextLevelText">Lv. 2</span>
+        </div>
+      </div>
+
+      <div class="rank-big">
+        <div class="rank-big-name" id="profRankName">Bronze I</div>
+        <div class="rank-big-stars" id="profRankStars">★☆☆☆</div>
+        <div class="rank-big-sub" id="profRankSub">0 / 44 BINTANG</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-mini"><div class="v" id="statWins">0</div><div class="l">MENANG</div></div>
+        <div class="stat-mini"><div class="v" id="statLosses">0</div><div class="l">KALAH</div></div>
+        <div class="stat-mini"><div class="v" id="statWinrate">0%</div><div class="l">WINRATE</div></div>
+      </div>
+
+      <div class="profile-actions">
+        <button class="btn-outline" id="editProfileBtn">✏️ EDIT PROFIL</button>
+        <button class="btn-outline" id="statsDetailBtn">📊 STATISTIK DETAIL</button>
+        <button class="btn-danger-outline" id="logoutFromProfile">🚪 LOGOUT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: FRIENDS ===== -->
+  <div class="modal-overlay" id="friendsModal">
+    <div class="modal">
+      <button class="modal-close" data-close="friendsModal">✕</button>
+      <div class="modal-title">👥 TEMAN</div>
+      <div class="modal-sub">Tambah teman, lihat permintaan, dan tantang main.</div>
+
+      <div class="add-friend-box">
+        <input type="text" id="friendSearchInput" placeholder="Cari username teman..." maxlength="16">
+        <button id="addFriendBtn">+ TAMBAH</button>
+      </div>
+
+      <div class="friends-tabs">
+        <button class="friends-tab active" data-ftab="list">
+          TEMAN <span class="tab-count hidden" id="countFriends">0</span>
+        </button>
+        <button class="friends-tab" data-ftab="requests">
+          PERMINTAAN <span class="tab-count hidden" id="countRequests">0</span>
+        </button>
+        <button class="friends-tab" data-ftab="sent">
+          TERKIRIM <span class="tab-count hidden" id="countSent">0</span>
+        </button>
+      </div>
+
+      <div class="friends-list" id="friendsList"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: NOTIFICATIONS ===== -->
+  <div class="modal-overlay" id="notifModal">
+    <div class="modal">
+      <button class="modal-close" data-close="notifModal">✕</button>
+      <div class="modal-title">🔔 NOTIFIKASI</div>
+      <div class="modal-sub">Semua aktivitas terbaru kamu.</div>
+      <div class="notif-list" id="notifList"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: LEADERBOARD ===== -->
+  <div class="modal-overlay" id="leaderboardModal">
+    <div class="modal">
+      <button class="modal-close" data-close="leaderboardModal">✕</button>
+      <div class="modal-title">🏆 LEADERBOARD</div>
+      <div class="modal-sub">Top pemain catur berdasarkan rank.</div>
+      <div class="lb-list" id="lbList"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: SETTINGS ===== -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <button class="modal-close" data-close="settingsModal">✕</button>
+      <div class="modal-title">⚙️ SETELAN</div>
+      <div class="modal-sub">Pengaturan permainan kamu.</div>
+
+      <div class="setting-group">
+        <div class="setting-label">GAME</div>
+        <div class="setting-toggle" data-setting="sound">
+          <div>
+            <div class="st-label">🔊 Suara</div>
+            <div class="st-sub">Efek suara game</div>
+          </div>
+          <div class="switch on" id="switchSound"></div>
+        </div>
+        <div class="setting-toggle" data-setting="music">
+          <div>
+            <div class="st-label">🎵 Musik</div>
+            <div class="st-sub">Musik latar</div>
+          </div>
+          <div class="switch on" id="switchMusic"></div>
+        </div>
+        <div class="setting-toggle" data-setting="vibration">
+          <div>
+            <div class="st-label">📳 Getar</div>
+            <div class="st-sub">Getar saat langkah</div>
+          </div>
+          <div class="switch on" id="switchVib"></div>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">NOTIFIKASI</div>
+        <div class="setting-toggle" data-setting="notifFriend">
+          <div>
+            <div class="st-label">👥 Permintaan Teman</div>
+            <div class="st-sub">Notif saat ada yang add</div>
+          </div>
+          <div class="switch on" id="switchNotifFriend"></div>
+        </div>
+        <div class="setting-toggle" data-setting="notifGame">
+          <div>
+            <div class="st-label">🎮 Undangan Game</div>
+            <div class="st-sub">Notif saat ditantang</div>
+          </div>
+          <div class="switch on" id="switchNotifGame"></div>
+        </div>
+      </div>
+
+      <div class="profile-actions" style="margin-top:16px;">
+        <button class="btn-outline" id="resetProgressBtn">🔄 RESET PROGRESS RANK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: INVENTORY ===== -->
+  <div class="modal-overlay" id="invModal">
+    <div class="modal">
+      <button class="modal-close" data-close="invModal">✕</button>
+      <div class="modal-title">🎒 INVENTORY</div>
+      <div class="modal-sub">Item yang kamu punya. Klik untuk pakai.</div>
+
+      <div class="inv-tabs">
+        <button class="inv-tab active" data-tab="board">PAPAN</button>
+        <button class="inv-tab" data-tab="pieces">BIDAK</button>
+      </div>
+
+      <div class="inv-list" id="invList"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: MISSION ===== -->
+  <div class="modal-overlay" id="missionModal">
+    <div class="modal">
+      <button class="modal-close" data-close="missionModal">✕</button>
+      <div class="modal-title">🎯 MISI HARIAN</div>
+      <div class="modal-sub">Selesaikan misi untuk dapat koin. Reset tiap 10 menit.</div>
+
+      <div class="mission-card">
+        <div class="mission-card-title">
+          <span>♟️ Mainkan 2 Game</span>
+          <span id="missionCardProgress" style="color:#ff8c00;font-size:12px;">0/2</span>
+        </div>
+        <div class="mission-card-desc">Selesaikan 2 pertandingan catur apapun modenya.</div>
+        <div class="mission-card-reward">
+          <span class="mini-coin"></span> +1,000 Koin
+        </div>
+        <button class="mission-claim-btn" id="claimBtn" disabled>KLAIM</button>
+        <div class="mission-timer-big" id="missionTimerBig">Reset dalam 10:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: LOGOUT CONFIRM ===== -->
+  <div class="modal-overlay" id="logoutModal">
+    <div class="modal" style="max-width:340px;">
+      <div class="confirm-box">
+        <div class="confirm-icon">🚪</div>
+        <div class="confirm-title">Keluar?</div>
+        <div class="confirm-text">Kamu yakin mau logout? Progress tetap tersimpan.</div>
+        <div class="confirm-actions">
+          <button class="btn-cancel" data-close="logoutModal">BATAL</button>
+          <button class="btn-danger" id="confirmLogout">KELUAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: CONFIRM GENERIC ===== -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width:360px;">
+      <div class="confirm-box">
+        <div class="confirm-icon" id="confirmIcon">⚠️</div>
+        <div class="confirm-title" id="confirmTitle">Yakin?</div>
+        <div class="confirm-text" id="confirmText">-</div>
+        <div class="confirm-actions">
+          <button class="btn-cancel" id="confirmCancel">BATAL</button>
+          <button class="btn-danger" id="confirmOk">YA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== POPUP: GAME INVITE ===== -->
+  <div class="invite-popup" id="invitePopup">
+    <div class="invite-popup-head">
+      <div class="invite-popup-icon">🎮</div>
+      <div>
+        <div class="invite-popup-title" id="inviteFrom">Tantangan Masuk!</div>
+        <div class="invite-popup-sub" id="inviteTime">Baru saja</div>
+      </div>
+    </div>
+    <div class="invite-popup-text" id="inviteText">...</div>
+    <div class="invite-popup-actions">
+      <button class="btn-cancel" id="inviteDecline">TOLAK</button>
+      <button class="btn-primary" id="inviteAccept">TERIMA</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  /* =========================================================
+     KONFIGURASI API & SFX & STATE GLOBAL
+     ========================================================= */
+  const API_URL = "https://catur-destro.dedisurakhman234.workers.dev/api";
+  const sfxClick = document.getElementById('sfxClick');
+  const CURRENT_USER = sessionStorage.getItem('chessUser');
+  const IS_OFFLINE = localStorage.getItem('chessOfflineMode') === 'true';
+
+  if (!CURRENT_USER && !IS_OFFLINE) {
+    window.location.href = 'login.html';
+  }
+
+  // Global State (No Data Game in LocalStorage for Online)
+  let userData = null; 
+  let coins = 0;
+  let owned = { boards: ['default'], pieces: ['default'] };
+  let equipped = { board: 'default', pieces: 'default' };
+  let friendsData = { friends: [], requests: [], sent: [] };
+  let notifsData = [];
+  let settings = JSON.parse(localStorage.getItem('chessSettings') || '{"sound":true,"music":true,"vibration":true,"notifFriend":true,"notifGame":true}');
+  let shopItems = { boards: [], pieces: [] };
+  
+  // Variabel buat Multiplayer
+  let activeRoomCode = null; // Nyimpen room code kalau Elsa nantang
+
+  // Fallback Shop Items
+  const DEFAULT_SHOP_ITEMS = {
+    boards: [
+      { id: 'default', name: 'Klasik', desc: 'Papan catur klasik', price: 0, light: '#e8d8b8', dark: '#8a6d4a', accent: false },
+      { id: 'neon', name: 'Neon', desc: 'Papan neon bercahaya', price: 500, light: '#2a1b4a', dark: '#00e5ff', accent: true },
+      { id: 'wood', name: 'Kayu', desc: 'Papan kayu alami', price: 750, light: '#d4a373', dark: '#7f5539', accent: false }
+    ],
+    pieces: [
+      { id: 'default', name: 'Klasik', desc: 'Bidak klasik hitam-putih', price: 0, white: '#fff', black: '#111', shadow: '#000' }
+    ]
+  };
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('button') || e.target.closest('.bottom-btn') || e.target.closest('.profile')) {
+      if (sfxClick) { sfxClick.currentTime = 0; sfxClick.play().catch(() => {}); }
+    }
+  });
+
+  /* =========================================================
+     THEME HANDLER
+     ========================================================= */
+  const currentTheme = localStorage.getItem('chessTheme') || 'dark';
+  if (currentTheme === 'light') document.body.classList.add('light-theme');
+  
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    document.body.classList.toggle('light-theme');
+    const isLight = document.body.classList.contains('light-theme');
+    localStorage.setItem('chessTheme', isLight ? 'light' : 'dark');
+    showToast(isLight ? '☀️ Tema Terang Aktif' : '🌙 Tema Gelap Aktif', 'success');
+  });
+
+  /* =========================================================
+     UTILS & API FETCH
+     ========================================================= */
+  async function fetchAPI(endpoint, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      return res;
+    } catch (e) {
+      clearTimeout(timeout);
+      throw e;
+    }
+  }
+
+  function getEquipKey() {
+    return IS_OFFLINE ? 'chessEquipped_Tamu' : 'chessEquipped';
+  }
+
+  function loadEquipped() {
+    equipped = JSON.parse(localStorage.getItem(getEquipKey()) || '{"board":"default","pieces":"default"}');
+  }
+
+  function saveEquipped() {
+    localStorage.setItem(getEquipKey(), JSON.stringify(equipped));
+  }
+
+  /* =========================================================
+     FETCH DATA USER (ONLINE VS OFFLINE)
+     ========================================================= */
+  async function fetchUserData() {
+    try {
+      // 1. Ambil Shop Items dari API
+      try {
+        const resShop = await fetchAPI('/shop/items');
+        if (resShop.ok) {
+          const dataShop = await resShop.json();
+          if (dataShop.boards && dataShop.boards.length > 0) shopItems = dataShop;
+          else shopItems = DEFAULT_SHOP_ITEMS;
+        } else { shopItems = DEFAULT_SHOP_ITEMS; }
+      } catch (e) {
+        shopItems = DEFAULT_SHOP_ITEMS;
+      }
+
+      // 2. Ambil User Data
+      if (IS_OFFLINE || CURRENT_USER === 'Tamu') {
+        // MODE OFFLINE
+        coins = parseInt(localStorage.getItem('chessCoins_Tamu') || '100');
+        let prof = JSON.parse(localStorage.getItem('chessProfile_Tamu') || '{"level":1,"exp":0,"expToNext":10}');
+        let rnk = JSON.parse(localStorage.getItem('chessRank_Tamu') || '{"totalStars":0}');
+        let st = JSON.parse(localStorage.getItem('chessStats_Tamu') || '{"wins":0,"losses":0,"draws":0}');
+        let ow = JSON.parse(localStorage.getItem('chessOwned_Tamu') || '{"boards":["default"],"pieces":["default"]}');
+        
+        userData = {
+          username: 'Tamu',
+          coins: coins,
+          level: prof.level,
+          exp: prof.exp,
+          exp_to_next: prof.expToNext,
+          rank_stars: rnk.totalStars,
+          owned: ow,
+          wins: st.wins, losses: st.losses, draws: st.draws
+        };
+        owned = ow;
+        loadEquipped();
+        updateUI();
+      } else {
+        // MODE ONLINE
+        const res = await fetchAPI(`/user?username=${CURRENT_USER}`);
+        if (!res.ok) throw new Error('User not found');
+        userData = await res.json();
+        
+        coins = userData.coins;
+        owned = userData.owned || { boards: ['default'], pieces: ['default'] };
+        loadEquipped();
+        
+        updateUI();
+        startPolling(); // Mulai polling teman & notif
+      }
+    } catch (e) {
+      console.warn("API Error:", e);
+      if (!IS_OFFLINE) showToast('⚠️ Gagal memuat data server', 'error');
+    }
+  }
+
+  /* =========================================================
+     UPDATE UI UTAMA
+     ========================================================= */
+  function updateUI() {
+    if (!userData) return;
+    
+    document.getElementById('playerName').textContent = userData.username;
+    document.getElementById('coinAmount').textContent = (userData.coins || 0).toLocaleString('en-US');
+    document.getElementById('avatarEl').textContent = (userData.username[0] || '♚').toUpperCase();
+    
+    const lvl = userData.level || 1;
+    const exp = userData.exp || 0;
+    const expNxt = userData.exp_to_next || 10;
+    const pct = Math.min(100, (exp / expNxt) * 100);
+
+    document.getElementById('levelText').textContent = 'LV. ' + lvl + ' • ELO ' + (1200 + (lvl * 20));
+    document.getElementById('expText').textContent = exp + '/' + expNxt;
+    document.getElementById('expBarFill').style.width = pct + '%';
+    document.getElementById('nextLevelText').textContent = 'Lv. ' + (lvl + 1);
+    
+    const rankObj = starsToRank(userData.rank_stars || 0);
+    document.getElementById('miniStars').innerHTML = rankHTML(rankObj);
+
+    renderAIDifficultyByLevel(lvl);
+    renderBoard();
+    renderMission();
+  }
+
+  /* =========================================================
+     RENDER PAPAN (PREVIEW)
+     ========================================================= */
+  const initialSetup = [
+    ['♜','♞','♝','♛','♚','♝','♞','♜'],
+    ['♟','♟','♟','♟','♟','♟','♟','♟'],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['♙','♙','♙','♙','♙','♙','♙','♙'],
+    ['♖','♘','♗','♕','♔','♗','♘','♖']
+  ];
+
+  function renderBoard() {
+    const grid = document.getElementById('boardGrid');
+    grid.innerHTML = '';
+    const boardSkin = shopItems.boards.find(b => b.id === equipped.board) || shopItems.boards[0] || DEFAULT_SHOP_ITEMS.boards[0];
+    const pieceSkin = shopItems.pieces.find(p => p.id === equipped.pieces) || shopItems.pieces[0] || DEFAULT_SHOP_ITEMS.pieces[0];
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const isLight = (r + c) % 2 === 0;
+        cell.style.background = isLight ? boardSkin.light : boardSkin.dark;
+        if (boardSkin.accent) cell.style.boxShadow = isLight ? 'inset 0 0 10px rgba(0,229,255,0.3)' : 'inset 0 0 10px rgba(255,0,170,0.3)';
+        
+        const piece = initialSetup[r][c];
+        if (piece) {
+          const span = document.createElement('span');
+          span.className = 'piece';
+          span.textContent = piece;
+          const isWhite = r >= 6;
+          span.style.color = isWhite ? pieceSkin.white : pieceSkin.black;
+          span.style.textShadow = '0 1px 2px ' + pieceSkin.shadow + ', 0 0 6px ' + pieceSkin.shadow;
+          cell.appendChild(span);
+        }
+        grid.appendChild(cell);
+      }
+    }
+    document.getElementById('boardLabel').textContent = (boardSkin.name || 'Klasik').toUpperCase() + ' • ' + (pieceSkin.name || 'Klasik').toUpperCase();
+  }
+
+  /* =========================================================
+     RENDER AI DIFFICULTY
+     ========================================================= */
+  function renderAIDifficultyByLevel(lvl) {
+    const el = document.getElementById('aiDiffPreview');
+    if (!el) return;
+    let tier = 'easy', label = '🟢 AI: MUDAH';
+    if (lvl > 2 && lvl <= 5) { tier = 'normal'; label = '🟡 AI: NORMAL'; }
+    else if (lvl > 5 && lvl <= 10) { tier = 'hard'; label = '🔴 AI: SULIT'; }
+    else if (lvl > 10) { tier = 'hardcore'; label = '💀 AI: HARDCODE'; }
+    el.className = 'ai-diff-preview ' + tier;
+    el.textContent = label;
+  }
+
+  /* =========================================================
+     RANK SYSTEM
+     ========================================================= */
+  const RANK_NAMES = ['Bronze','Silver','Gold','Platinum','Diamond','Master','Grandmaster','Elite','Legend','Mythic','Immortal'];
+  const MAX_STARS = RANK_NAMES.length * 4;
+
+  function toRoman(n) { const r = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI']; return r[n - 1] || n; }
+  function starsToRank(totalStars) {
+    totalStars = Math.max(0, Math.min(MAX_STARS, totalStars));
+    if (totalStars === 0) return { rankIdx: 0, rankName: RANK_NAMES[0], stars: 0, totalStars: 0 };
+    const rankIdx = Math.floor((totalStars - 1) / 4);
+    const starsInRank = ((totalStars - 1) % 4) + 1;
+    return { rankIdx, rankName: RANK_NAMES[rankIdx], stars: starsInRank, totalStars };
+  }
+  function rankHTML(rankObj) {
+    let s = '';
+    for (let i = 0; i < 4; i++) s += i < rankObj.stars ? '★' : '<span class="empty">★</span>';
+    return s;
+  }
+
+let pollInterval = null;
+let lastInviteRoom = null; // Pengaman biar pop-up gak dobel
+
+function startPolling() {
+  if (IS_OFFLINE) return;
+  if (pollInterval) clearInterval(pollInterval);
+  
+  pollInterval = setInterval(async () => {
+    try {
+      // 1. Ambil data notif & teman
+      const res = await fetchAPI(`/poll?username=${CURRENT_USER}`);
+      if (res.ok) {
+        const data = await res.json();
+        friendsData.friends = data.friends || [];
+        friendsData.requests = data.requests || [];
+        notifsData = data.notifications || [];
+        updateNotifDot();
+        
+        if (document.getElementById('friendsModal').classList.contains('show')) {
+          renderFriends();
+        }
+      }
+      
+      // 2. Cek Invite Game Masuk (Buat DESTRO)
+      // Cuma jalan kalau pop-up lagi gak muncul
+      const isPopupShowing = document.getElementById('invitePopup').classList.contains('show');
+      if (!isPopupShowing) {
+        try {
+          const resInv = await fetchAPI(`/game/check-invite?username=${CURRENT_USER}`);
+          if (resInv.ok) {
+            const invData = await resInv.json();
+            if (invData.invite && invData.invite.roomCode !== lastInviteRoom) {
+              lastInviteRoom = invData.invite.roomCode; // Catat room terakhir
+              showMultiplayerInvite(invData.invite);
+            }
+          }
+        } catch (e) {}
+      }
+      
+      // 3. Cek Status Room (Buat ELSA yang lagi nunggu)
+      if (activeRoomCode) {
+        try {
+          const resStat = await fetchAPI(`/game/check-status?room=${activeRoomCode}`);
+          if (resStat.ok) {
+            const statData = await resStat.json();
+            if (statData.status === 'playing') {
+              clearInterval(pollInterval);
+              window.location.href = `game.html?room=${activeRoomCode}`;
+            } else if (statData.status === 'declined') {
+              showToast('❌ Tantanganmu ditolak lawan', 'error');
+              activeRoomCode = null;
+            } else if (statData.status === 'expired') {
+              showToast('⏳ Waktu habis, lawan tidak merespon', 'error');
+              activeRoomCode = null;
+            }
+          }
+        } catch (e) {}
+      }
+      
+    } catch (e) { console.warn('Polling error:', e); }
+  }, 3000); // 3 detik
+}
+  function updateNotifDot() {
+    const hasUnreadNotif = notifsData.some(n => !n.is_read);
+    const hasFriendReq = friendsData.requests.length > 0;
+    document.getElementById('notifDot').classList.toggle('hidden', !hasUnreadNotif);
+    document.getElementById('friendsDot').classList.toggle('hidden', !hasFriendReq);
+  }
+
+  /* =========================================================
+     [UPDATE 2] FUNGSI UNTUK MULTIPLAYER
+     ========================================================= */
+  
+  // Fungsi buat nampilin popup tantangan di HP DESTRO
+function showMultiplayerInvite(invite) {
+  const popup = document.getElementById('invitePopup');
+  document.getElementById('inviteFrom').textContent = invite.from;
+  document.getElementById('inviteText').textContent = invite.from + ' menantangmu bermain!';
+  popup.classList.add('show');
+  
+  const acceptBtn = document.getElementById('inviteAccept');
+  const declineBtn = document.getElementById('inviteDecline');
+  
+  // Hapus event listener lama biar gak dobel
+  const newAccept = acceptBtn.cloneNode(true);
+  const newDecline = declineBtn.cloneNode(true);
+  acceptBtn.parentNode.replaceChild(newAccept, acceptBtn);
+  declineBtn.parentNode.replaceChild(newDecline, declineBtn);
+  
+  newAccept.addEventListener('click', async () => {
+    popup.classList.remove('show');
+    await fetchAPI('/game/respond', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomCode: invite.roomCode, action: 'accept', username: CURRENT_USER }) });
+    // Langsung lempar ke game
+    window.location.href = `game.html?room=${invite.roomCode}`;
+  });
+  
+  newDecline.addEventListener('click', async () => {
+    popup.classList.remove('show');
+    await fetchAPI('/game/respond', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomCode: invite.roomCode, action: 'decline', username: CURRENT_USER }) });
+    lastInviteRoom = null; // Reset biar bisa nerima invite baru
+  });
+}
+
+  // Fungsi buat Elsa nantang DESTRO (dipanggil dari tombol Tantang di modal teman)
+async function createMultiplayerRoom(targetUsername) {
+  try {
+    const res = await fetchAPI('/game/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player_a: CURRENT_USER, player_b: targetUsername })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    
+    // ⚠️ INI YANG TADI KELUPAAN: Nyimpen room code biar dipolling
+    activeRoomCode = data.roomCode;
+    
+    showToast('⏳ Menunggu ' + targetUsername + ' menerima...', 'success');
+    
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  }
+}
+  /* =========================================================
+     MISSION SYSTEM (API FOR ONLINE, LOCAL FOR OFFLINE)
+     ========================================================= */
+  let mission = { progress: 0, claimed: false, resetAt: 0, target: 2, reward: 1000 };
+  let missionTimerInt = null;
+
+  async function fetchMission() {
+    if (IS_OFFLINE) {
+      let m = JSON.parse(localStorage.getItem('chessMission_Tamu') || 'null');
+      const now = Date.now();
+      if (!m || now >= m.resetAt) {
+        m = { progress: 0, claimed: false, startedAt: now, resetAt: now + 600000 };
+        localStorage.setItem('chessMission_Tamu', JSON.stringify(m));
+      }
+      mission = { ...m, target: 2, reward: 1000, resetAt: m.resetAt / 1000 };
+    } else {
+      try {
+        const res = await fetchAPI(`/mission?username=${CURRENT_USER}`);
+        if (res.ok) {
+          const data = await res.json();
+          mission = data;
+        }
+      } catch (e) { console.warn('Gagal ambil misi:', e); }
+    }
+    renderMission();
+  }
+
+  function renderMission() {
+    const progress = mission.progress || 0;
+    const claimed = mission.claimed;
+    const target = mission.target || 2;
+    const reward = mission.reward || 1000;
+
+    document.getElementById('missionProgressTxt').textContent = 'Main ' + progress + '/' + target;
+    document.getElementById('missionCardProgress').textContent = progress + '/' + target;
+    document.getElementById('missionRewardTxt').textContent = reward;
+    document.getElementById('missionFill').style.width = Math.min(100, (progress / target) * 100) + '%';
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const remain = Math.max(0, mission.resetAt - nowSec);
+    const timeStr = String(Math.floor(remain / 60)).padStart(2, '0') + ':' + String(remain % 60).padStart(2, '0');
+    document.getElementById('missionTimer').textContent = timeStr;
+    document.getElementById('missionTimerBig').textContent = claimed ? 'Selesai! Reset dalam ' + timeStr : 'Reset dalam ' + timeStr;
+
+    const claimBtn = document.getElementById('claimBtn');
+    if (claimed) {
+      claimBtn.disabled = true; claimBtn.textContent = '✓ SUDAH DIKLAIM';
+      claimBtn.style.background = 'rgba(77,255,136,0.15)'; claimBtn.style.color = '#4dff88';
+    } else if (progress >= target) {
+      claimBtn.disabled = false; claimBtn.textContent = '🎁 KLAIM ' + reward + ' KOIN';
+      claimBtn.style.background = ''; claimBtn.style.color = '';
+    } else {
+      claimBtn.disabled = true; claimBtn.textContent = 'KLAIM (' + progress + '/' + target + ')';
+      claimBtn.style.background = ''; claimBtn.style.color = '';
+    }
+  }
+
+  function startMissionTimer() {
+    if (missionTimerInt) clearInterval(missionTimerInt);
+    missionTimerInt = setInterval(async () => {
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (nowSec >= mission.resetAt) {
+        await fetchMission();
+      } else {
+        renderMission();
+      }
+    }, 1000);
+  }
+
+  document.getElementById('missionWidget').addEventListener('click', () => { renderMission(); openModal('missionModal'); });
+
+  document.getElementById('claimBtn').addEventListener('click', async () => {
+    if (mission.claimed || mission.progress < mission.target) return;
+    const claimBtn = document.getElementById('claimBtn');
+    claimBtn.disabled = true; claimBtn.textContent = 'MEMPROSES...';
+
+    if (IS_OFFLINE) {
+      coins += mission.reward;
+      localStorage.setItem('chessCoins_Tamu', coins);
+      userData.coins = coins;
+      
+      let m = JSON.parse(localStorage.getItem('chessMission_Tamu'));
+      m.claimed = true;
+      localStorage.setItem('chessMission_Tamu', JSON.stringify(m));
+      
+      mission.claimed = true;
+      updateUI();
+      renderMission();
+      showToast('🎉 +' + mission.reward + ' Koin diterima!', 'success');
+    } else {
+      try {
+        const res = await fetchAPI('/mission/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: CURRENT_USER, expectedCoins: coins })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        
+        coins = data.newCoins;
+        userData.coins = coins;
+        mission.claimed = true;
+        
+        updateUI();
+        renderMission();
+        showToast('🎉 +' + mission.reward + ' Koin diterima!', 'success');
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+        if (e.message.includes('Koin berubah')) fetchUserData();
+        renderMission();
+      }
+    }
+  });
+
+  /* =========================================================
+     UI MODAL, TOAST, CONFIRM HELPERS
+     ========================================================= */
+  let toastTimer;
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast'; if (type) t.classList.add(type);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add('show'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  
+  document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
+  });
+
+  let confirmCallback = null;
+  function showConfirm(icon, title, text, okText, cb, danger = true) {
+    document.getElementById('confirmIcon').textContent = icon;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmText').textContent = text;
+    const okBtn = document.getElementById('confirmOk');
+    okBtn.textContent = okText; okBtn.className = danger ? 'btn-danger' : 'btn-primary';
+    confirmCallback = cb; openModal('confirmModal');
+  }
+  document.getElementById('confirmCancel').addEventListener('click', () => { closeModal('confirmModal'); confirmCallback = null; });
+  document.getElementById('confirmOk').addEventListener('click', () => {
+    closeModal('confirmModal'); if (confirmCallback) confirmCallback(); confirmCallback = null;
+  });
+
+  /* =========================================================
+     PROFILE & LOGOUT
+     ========================================================= */
+  function renderProfile() {
+    if (!userData) return;
+    const rank = starsToRank(userData.rank_stars || 0);
+    document.getElementById('profAvatar').textContent = (userData.username[0] || '♚').toUpperCase();
+    document.getElementById('profName').textContent = userData.username;
+    document.getElementById('profUsername').textContent = '@' + userData.username.toLowerCase();
+    document.getElementById('profRankName').textContent = rank.rankName + ' ' + toRoman(rank.rankIdx + 1);
+    document.getElementById('profRankStars').innerHTML = rankHTML(rank);
+    document.getElementById('profRankSub').textContent = rank.totalStars + ' / ' + MAX_STARS + ' BINTANG';
+
+    document.getElementById('profLevelNum').textContent = userData.level;
+    const pct = Math.min(100, (userData.exp / userData.exp_to_next) * 100);
+    document.getElementById('profExpFill').style.width = pct + '%';
+    document.getElementById('profExpText').textContent = userData.exp + '/' + userData.exp_to_next;
+    document.getElementById('profNextLevelText').textContent = 'Lv. ' + (userData.level + 1);
+
+    const totalGames = (userData.wins || 0) + (userData.losses || 0) + (userData.draws || 0);
+    const wr = totalGames > 0 ? Math.round((userData.wins / totalGames) * 100) : 0;
+    document.getElementById('statWins').textContent = userData.wins || 0;
+    document.getElementById('statLosses').textContent = userData.losses || 0;
+    document.getElementById('statWinrate').textContent = wr + '%';
+  }
+
+  document.getElementById('profileBtn').addEventListener('click', () => { renderProfile(); openModal('profileModal'); });
+  document.getElementById('editProfileBtn').addEventListener('click', () => showToast('✏️ Fitur edit profil segera hadir', ''));
+  document.getElementById('statsDetailBtn').addEventListener('click', () => {
+    const total = (userData.wins || 0) + (userData.losses || 0) + (userData.draws || 0);
+    showToast('📊 ' + total + ' game • ' + (userData.wins||0) + 'W ' + (userData.losses||0) + 'L ' + (userData.draws||0) + 'D');
+  });
+  document.getElementById('logoutFromProfile').addEventListener('click', () => { closeModal('profileModal'); openModal('logoutModal'); });
+  document.getElementById('logoutBtn').addEventListener('click', () => openModal('logoutModal'));
+  
+  document.getElementById('confirmLogout').addEventListener('click', () => {
+    sessionStorage.removeItem('chessUser');
+    localStorage.removeItem('chessOfflineMode');
+    window.location.href = 'login.html';
+  });
+
+  /* =========================================================
+     INVENTORY
+     ========================================================= */
+  let invTab = 'board';
+  function renderInventory() {
+    const list = document.getElementById('invList');
+    list.innerHTML = '';
+    
+    const ownedIds = invTab === 'board' ? owned.boards : owned.pieces;
+    const allItems = invTab === 'board' ? shopItems.boards : shopItems.pieces;
+    const equippedKey = invTab === 'board' ? equipped.board : equipped.pieces;
+
+    const items = ownedIds.map(id => allItems.find(it => it.id === id)).filter(Boolean);
+    if (items.length === 0) {
+      list.innerHTML = '<div class="inv-empty"><span class="emo">📦</span>Belum ada item. Beli dulu di Shop!</div>';
+      return;
+    }
+
+    items.forEach(item => {
+      const isEquipped = item.id === equippedKey;
+      const div = document.createElement('div');
+      div.className = 'inv-item' + (isEquipped ? ' equipped' : '');
+      const preview = document.createElement('div');
+      preview.className = 'inv-preview';
+
+      if (invTab === 'board') {
+        preview.classList.add('board-preview');
+        for (let i = 0; i < 16; i++) {
+          const s = document.createElement('div');
+          s.style.background = ((Math.floor(i / 4) + i) % 2 === 0) ? item.light : item.dark;
+          preview.appendChild(s);
+        }
+      } else {
+        preview.textContent = '♞'; preview.style.color = item.white;
+        preview.style.textShadow = '0 0 6px ' + item.shadow; preview.style.background = 'rgba(0,0,0,0.3)';
+        preview.style.fontSize = '32px';
+      }
+
+      const name = document.createElement('div');
+      name.className = 'inv-name'; name.textContent = item.name;
+      const badge = document.createElement('div');
+      badge.className = 'inv-badge'; badge.textContent = isEquipped ? 'DIPAKAI' : 'KLIK UNTUK PAKAI';
+
+      div.appendChild(preview); div.appendChild(name); div.appendChild(badge);
+      div.addEventListener('click', () => {
+        if (isEquipped) return;
+        if (invTab === 'board') equipped.board = item.id;
+        else equipped.pieces = item.id;
+        
+        saveEquipped();
+        renderBoard(); renderInventory();
+        showToast('✅ ' + item.name + ' dipakai!', 'success');
+      });
+      list.appendChild(div);
+    });
+  }
+
+  document.querySelectorAll('.inv-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active'); invTab = tab.dataset.tab; renderInventory();
+    });
+  });
+  document.getElementById('invBtn').addEventListener('click', () => { renderInventory(); openModal('invModal'); });
+
+  /* =========================================================
+     NOTIFICATIONS UI
+     ========================================================= */
+  function renderNotifs() {
+    const list = document.getElementById('notifList');
+    list.innerHTML = '';
+    if (notifsData.length === 0) {
+      list.innerHTML = '<div class="empty-list"><span class="emo">🔔</span>Belum ada notifikasi</div>';
+      return;
+    }
+    notifsData.forEach((n) => {
+      const div = document.createElement('div');
+      div.className = 'notif-item' + (!n.is_read ? ' unread' : '');
+      div.innerHTML = `
+        <div class="notif-icon">🔔</div>
+        <div class="notif-body">
+          <div class="notif-text">${n.title}</div>
+          <div class="notif-time">${n.body || ''}</div>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  document.getElementById('notifBtn').addEventListener('click', async () => {
+    renderNotifs(); openModal('notifModal');
+    if (!IS_OFFLINE && notifsData.some(n => !n.is_read)) {
+      await fetchAPI('/notifications/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: CURRENT_USER })
+      }).catch(e => {});
+      notifsData.forEach(n => n.is_read = 1);
+      updateNotifDot();
+    }
+  });
+
+  /* =========================================================
+     FRIENDS UI
+     ========================================================= */
+  let currentFTab = 'list';
+  function renderFriends() {
+    const list = document.getElementById('friendsList');
+    list.innerHTML = '';
+    const reqCount = friendsData.requests.length;
+    const sentCount = friendsData.sent.length;
+    const friendCount = friendsData.friends.length;
+
+    document.getElementById('countFriends').textContent = friendCount;
+    document.getElementById('countFriends').classList.toggle('hidden', friendCount === 0);
+    document.getElementById('countRequests').textContent = reqCount;
+    document.getElementById('countRequests').classList.toggle('hidden', reqCount === 0);
+    document.getElementById('countSent').textContent = sentCount;
+    document.getElementById('countSent').classList.toggle('hidden', sentCount === 0);
+
+    if (currentFTab === 'list') {
+      if (friendsData.friends.length === 0) {
+        list.innerHTML = '<div class="empty-list"><span class="emo">👥</span>Belum ada teman.<br>Tambah teman pakai username mereka!</div>';
+        return;
+      }
+      friendsData.friends.forEach(fname => {
+        const item = document.createElement('div');
+        item.className = 'friend-item';
+        item.innerHTML = `
+          <div class="friend-avatar online">${fname[0].toUpperCase()}</div>
+          <div class="friend-info">
+            <div class="friend-name">${fname}</div>
+            <div class="friend-sub">🟢 Online • Siap main</div>
+          </div>
+          <div class="friend-actions">
+            <button class="friend-btn rematch" data-invite="${fname}" title="Tantang">⚔️</button>
+            <button class="friend-btn decline" data-remove="${fname}" title="Hapus">✕</button>
+          </div>
+        `;
+        item.querySelector('[data-invite]').addEventListener('click', () => inviteFriend(fname));
+        item.querySelector('[data-remove]').addEventListener('click', () => removeFriend(fname));
+        list.appendChild(item);
+      });
+    } else if (currentFTab === 'requests') {
+      if (friendsData.requests.length === 0) {
+        list.innerHTML = '<div class="empty-list"><span class="emo">📭</span>Tidak ada permintaan teman</div>';
+        return;
+      }
+      friendsData.requests.forEach(fname => {
+        const item = document.createElement('div');
+        item.className = 'friend-item';
+        item.innerHTML = `
+          <div class="friend-avatar">${fname[0].toUpperCase()}</div>
+          <div class="friend-info">
+            <div class="friend-name">${fname}</div>
+            <div class="friend-sub">Ingin berteman denganmu</div>
+          </div>
+          <div class="friend-actions">
+            <button class="friend-btn accept" data-accept="${fname}" title="Terima">✓</button>
+            <button class="friend-btn decline" data-decline="${fname}" title="Tolak">✕</button>
+          </div>
+        `;
+        item.querySelector('[data-accept]').addEventListener('click', () => acceptFriend(fname));
+        item.querySelector('[data-decline]').addEventListener('click', () => declineFriend(fname));
+        list.appendChild(item);
+      });
+    } else if (currentFTab === 'sent') {
+      if (friendsData.sent.length === 0) {
+        list.innerHTML = '<div class="empty-list"><span class="emo">📤</span>Belum ada permintaan terkirim</div>';
+        return;
+      }
+      friendsData.sent.forEach(fname => {
+        const item = document.createElement('div');
+        item.className = 'friend-item';
+        item.innerHTML = `
+          <div class="friend-avatar">${fname[0].toUpperCase()}</div>
+          <div class="friend-info">
+            <div class="friend-name">${fname}</div>
+            <div class="friend-sub">⏳ Menunggu konfirmasi</div>
+          </div>
+          <div class="friend-actions">
+            <button class="friend-btn decline" data-cancel="${fname}" title="Batalkan">✕</button>
+          </div>
+        `;
+        item.querySelector('[data-cancel]').addEventListener('click', () => cancelSent(fname));
+        list.appendChild(item);
+      });
+    }
+  }
+
+  document.querySelectorAll('.friends-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.friends-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active'); currentFTab = tab.dataset.ftab; renderFriends();
+    });
+  });
+  document.getElementById('friendsBtn').addEventListener('click', () => { renderFriends(); openModal('friendsModal'); });
+
+  document.getElementById('addFriendBtn').addEventListener('click', async () => {
+    const input = document.getElementById('friendSearchInput');
+    const uname = input.value.trim();
+    if (!uname) return showToast('❌ Masukkan username!', 'error');
+    if (uname.toLowerCase() === CURRENT_USER.toLowerCase()) return showToast('❌ Tidak bisa menambah diri sendiri!', 'error');
+
+    if (IS_OFFLINE) {
+      showToast('❌ Fitur teman hanya untuk online', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetchAPI('/friends/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: CURRENT_USER, target: uname })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      input.value = '';
+      showToast('✅ Permintaan terkirim ke ' + uname, 'success');
+    } catch (e) {
+      showToast('❌ ' + e.message, 'error');
+    }
+  });
+
+  async function acceptFriend(fname) {
+    if (IS_OFFLINE) return;
+    try {
+      await fetchAPI('/friends/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: CURRENT_USER, target: fname })
+      });
+      showToast('✅ ' + fname + ' sekarang berteman!', 'success');
+    } catch (e) { showToast('❌ Gagal menerima', 'error'); }
+  }
+
+  async function declineFriend(fname) {
+    if (IS_OFFLINE) return;
+    try {
+      await fetchAPI('/friends/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: CURRENT_USER, target: fname })
+      });
+      showToast('❌ Permintaan dari ' + fname + ' ditolak', '');
+    } catch (e) {}
+  }
+
+  function removeFriend(fname) {
+    if (IS_OFFLINE) return;
+    showConfirm('🗑️', 'Hapus Teman?', 'Hapus ' + fname + ' dari daftar teman?', 'HAPUS', async () => {
+      try {
+        await fetchAPI('/friends/remove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: CURRENT_USER, target: fname })
+        });
+        showToast('🗑️ ' + fname + ' dihapus dari teman', '');
+      } catch (e) {}
+    });
+  }
+
+  async function cancelSent(fname) {
+    if (IS_OFFLINE) return;
+    try {
+      await fetchAPI('/friends/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: fname, target: CURRENT_USER })
+      });
+      showToast('❌ Permintaan ke ' + fname + ' dibatalkan', '');
+    } catch (e) {}
+  }
+
+  // =========================================================
+  // [UPDATE 3] TOMBOL TANTANG DI MODAL TEMAN
+  // =========================================================
+  function inviteFriend(fname) {
+    if (IS_OFFLINE) return showToast('❌ Fitur ini hanya online', 'error');
+    
+    // Gw ganti pake createMultiplayerRoom biar beneran bikin room di DB
+    showConfirm('⚔️', 'Tantang ' + fname + '?', 'Kirim undangan bermain catur ke ' + fname + '?', 'TANTANG', () => {
+        createMultiplayerRoom(fname);
+        closeModal('friendsModal'); // Tutup modal teman
+    }, false);
+  }
+
+  /* =========================================================
+     LEADERBOARD
+     ========================================================= */
+  async function renderLeaderboard() {
+    const list = document.getElementById('lbList');
+    list.innerHTML = '<div class="empty-list">Memuat data...</div>';
+    openModal('leaderboardModal');
+
+    if (IS_OFFLINE) {
+      list.innerHTML = '<div class="empty-list"><span class="emo">🏆</span>Leaderboard butuh koneksi internet</div>';
+      return;
+    }
+
+    try {
+      const res = await fetchAPI('/leaderboard');
+      const data = await res.json();
+      list.innerHTML = '';
+      if (!data.players || data.players.length === 0) {
+        list.innerHTML = '<div class="empty-list"><span class="emo">🏆</span>Belum ada pemain</div>';
+        return;
+      }
+
+      data.players.forEach((p, idx) => {
+        const rank = starsToRank(p.rank_stars);
+        const row = document.createElement('div');
+        row.className = 'lb-row';
+        if (p.username.toLowerCase() === CURRENT_USER.toLowerCase()) row.classList.add('me');
+        if (idx === 0) row.classList.add('top1');
+        else if (idx === 1) row.classList.add('top2');
+        else if (idx === 2) row.classList.add('top3');
+
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '#' + (idx + 1);
+        const isMe = p.username.toLowerCase() === CURRENT_USER.toLowerCase();
+        row.innerHTML = `
+          <div class="lb-rank">${medal}</div>
+          <div class="lb-avatar">${p.username[0].toUpperCase()}</div>
+          <div class="lb-info">
+            <div class="lb-name">${p.username}${isMe ? ' <span style="color:var(--gold);font-size:10px;">(KAMU)</span>' : ''}</div>
+            <div class="lb-rank-name">LV. ${p.level} • ${rank.rankName} ${toRoman(rank.rankIdx + 1)}</div>
+          </div>
+          <div class="lb-stars">${p.rank_stars}★</div>
+        `;
+        list.appendChild(row);
+      });
+    } catch (e) {
+      list.innerHTML = '<div class="empty-list"><span class="emo">⚠️</span>Gagal memuat leaderboard</div>';
+    }
+  }
+  document.getElementById('leaderboardBtn').addEventListener('click', renderLeaderboard);
+
+  /* =========================================================
+     SETTINGS
+     ========================================================= */
+  function renderSettings() {
+    document.getElementById('switchSound').classList.toggle('on', settings.sound);
+    document.getElementById('switchMusic').classList.toggle('on', settings.music);
+    document.getElementById('switchVib').classList.toggle('on', settings.vibration);
+    document.getElementById('switchNotifFriend').classList.toggle('on', settings.notifFriend);
+    document.getElementById('switchNotifGame').classList.toggle('on', settings.notifGame);
+  }
+
+  document.querySelectorAll('.setting-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      const key = toggle.dataset.setting;
+      settings[key] = !settings[key];
+      localStorage.setItem('chessSettings', JSON.stringify(settings));
+      renderSettings();
+    });
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', () => { renderSettings(); openModal('settingsModal'); });
+
+  document.getElementById('resetProgressBtn').addEventListener('click', () => {
+    if (IS_OFFLINE) return showToast('❌ Reset progress hanya untuk online', 'error');
+    showConfirm('🔄', 'Reset Rank & Level?', 'Rank, level, EXP, dan statistik kamu akan direset ke awal. Tidak bisa dibatalkan!', 'RESET', async () => {
+      try {
+        await fetchAPI('/reset-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: CURRENT_USER })
+        });
+        showToast('🔄 Rank, level & statistik direset', 'success');
+        fetchUserData();
+      } catch (e) {
+        showToast('❌ Gagal reset progress', 'error');
+      }
+    });
+  });
+
+  /* =========================================================
+     PLAY BUTTON & MODE SELECT
+     ========================================================= */
+  const modeOpts = document.querySelectorAll('.mode-opt');
+  let currentMode = 'classic';
+  modeOpts.forEach(opt => {
+    opt.addEventListener('click', () => {
+      modeOpts.forEach(o => o.classList.remove('active'));
+      opt.classList.add('active'); currentMode = opt.dataset.mode;
+    });
+  });
+
+  document.getElementById('playBtn').addEventListener('click', async () => {
+    if (!mission.claimed && mission.progress < mission.target) {
+      if (IS_OFFLINE) {
+        mission.progress++;
+        let m = JSON.parse(localStorage.getItem('chessMission_Tamu'));
+        m.progress = mission.progress;
+        localStorage.setItem('chessMission_Tamu', JSON.stringify(m));
+        renderMission();
+      } else {
+        fetchAPI('/mission/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: CURRENT_USER })
+        }).then(() => fetchMission()).catch(() => {});
+      }
+    }
+    window.location.href = 'game.html?mode=' + currentMode;
+  });
+
+  document.getElementById('shopBtn').addEventListener('click', () => { window.location.href = 'shop.html'; });
+
+  /* =========================================================
+     INIT
+     ========================================================= */
+  loadEquipped();
+  fetchUserData();
+  fetchMission();
+  startMissionTimer();
+  renderSettings();
+  updateNotifDot();
+
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted || performance.navigation?.type === 2) {
+      fetchUserData();
+      fetchMission();
+    }
+  });
+</script>
+</body>
+</html>

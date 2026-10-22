@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chess - Shop</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --gold: #ffd700;
+    --gold-dark: #b8860b;
+    --bg-dark: #0a0a1a;
+    --panel: rgba(20, 20, 40, 0.85);
+    --border: rgba(255, 215, 0, 0.25);
+  }
+
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    height: 100vh;
+    height: 100dvh;
+    font-family: 'Segoe UI', sans-serif;
+    background: #0a0a1a;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    isolation: isolate;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, #12122a 25%, transparent 25%),
+      linear-gradient(-45deg, #12122a 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #12122a 75%),
+      linear-gradient(-45deg, transparent 75%, #12122a 75%);
+    background-size: 70px 70px;
+    background-position: 0 0, 0 35px, 35px -35px, -35px 0px;
+    opacity: 0.5;
+    animation: bgMove 40s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @keyframes bgMove {
+    from { background-position: 0 0, 0 35px, 35px -35px, -35px 0px; }
+    to { background-position: 70px 70px, 70px 105px, 105px 35px, 35px 70px; }
+  }
+
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .orb-1 { width: 400px; height: 400px; background: #ffd700; top: -120px; left: -100px; animation: float 12s ease-in-out infinite; }
+  .orb-2 { width: 350px; height: 350px; background: #6a00ff; bottom: -100px; right: -80px; animation: float 15s ease-in-out infinite reverse; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0,0); }
+    50% { transform: translate(40px, 30px); }
+  }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    gap: 12px;
+    flex-shrink: 0;
+    width: 100%;
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    border-radius: 14px;
+    color: #fff;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: 0.2s;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .back-btn:hover {
+    border-color: var(--gold);
+    transform: translateX(-3px);
+  }
+
+  .page-title {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, #ffd700, #fff8dc, #ffd700);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite;
+  }
+
+  @keyframes shine {
+    to { background-position: 200% center; }
+  }
+
+  .coin-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  .coin-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff3a0, #ffd700 40%, #b8860b);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.7), inset 0 -2px 3px rgba(0,0,0,0.3);
+    position: relative;
+    animation: coinSpin 3s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .coin-icon::before {
+    content: '♛';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #8a6d00;
+  }
+  @keyframes coinSpin {
+    0%, 100% { transform: rotateY(0deg); }
+    50% { transform: rotateY(180deg); }
+  }
+  .coin-amount {
+    font-weight: 800;
+    color: var(--gold);
+    font-size: 15px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    white-space: nowrap;
+  }
+
+  /* ===== TABS ===== */
+  .tabs-wrap {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    padding: 0 24px 16px;
+    flex-shrink: 0;
+  }
+
+  .tabs {
+    display: flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 5px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: #8888aa;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.25s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .tab.active {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #1a1a1a;
+    box-shadow: 0 4px 14px rgba(255, 215, 0, 0.4);
+  }
+
+  /* ===== SHOP CONTENT (scrollable) ===== */
+  .shop-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 24px 24px;
+    position: relative;
+    z-index: 5;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .shop-scroll::-webkit-scrollbar { width: 8px; }
+  .shop-scroll::-webkit-scrollbar-track { background: transparent; }
+  .shop-scroll::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 10px; }
+  .shop-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,215,0,0.5); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding-top: 4px;
+  }
+
+  /* Item card */
+  .item-card {
+    background: var(--panel);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 14px;
+    backdrop-filter: blur(10px);
+    transition: 0.25s;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .item-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,215,0,0.4);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 25px rgba(255,215,0,0.15);
+  }
+
+  .item-card.owned { border-color: rgba(77,255,136,0.3); }
+
+  .item-preview {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .item-preview.board-preview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+  }
+
+  .item-preview.piece-preview {
+    background: rgba(0,0,0,0.3);
+    font-size: 56px;
+  }
+
+  .item-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-desc {
+    font-size: 10px;
+    color: #8888aa;
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+    min-height: 24px;
+    line-height: 1.3;
+  }
+
+  .item-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    z-index: 2;
+  }
+
+  .badge-owned {
+    background: rgba(77,255,136,0.2);
+    color: #4dff88;
+    border: 1px solid rgba(77,255,136,0.4);
+  }
+
+  .badge-equipped {
+    background: rgba(255,215,0,0.2);
+    color: var(--gold);
+    border: 1px solid rgba(255,215,0,0.4);
+  }
+
+  .buy-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-top: auto;
+  }
+
+  .buy-btn.can-buy {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #1a1a1a;
+    box-shadow: 0 4px 12px rgba(255,215,0,0.3);
+  }
+  .buy-btn.can-buy:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255,215,0,0.5);
+  }
+
+  .buy-btn.cant-buy {
+    background: rgba(255,255,255,0.06);
+    color: #55557a;
+    cursor: not-allowed;
+  }
+
+  .buy-btn.owned-btn {
+    background: rgba(77,255,136,0.15);
+    color: #4dff88;
+    cursor: pointer;
+  }
+  .buy-btn.owned-btn:hover { background: rgba(77,255,136,0.25); }
+
+  .buy-btn.equipped-btn {
+    background: rgba(255,215,0,0.2);
+    color: var(--gold);
+    cursor: default;
+  }
+
+  .buy-price { display: flex; align-items: center; gap: 3px; }
+  .buy-price .mini-coin {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff3a0, #ffd700 40%, #b8860b);
+    display: inline-block;
+  }
+
+  /* Empty state */
+  .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #55557a; }
+  .empty-state .emo { font-size: 56px; display: block; margin-bottom: 16px; opacity: 0.5; }
+  .empty-state .t { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: #8888aa; letter-spacing: 1px; }
+  .empty-state .s { font-size: 12px; letter-spacing: 0.5px; }
+
+  /* Loading */
+  .loading-state { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #8888aa; font-size: 13px; letter-spacing: 1px; }
+  .loading-state .spinner {
+    width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: var(--gold); border-radius: 50%; margin: 0 auto 16px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a;
+    padding: 12px 24px; border-radius: 30px; font-weight: 800; font-size: 13px; letter-spacing: 1px;
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.5); z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none;
+    max-width: calc(100vw - 40px); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s; overflow-y: auto;
+  }
+  .modal-overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: linear-gradient(180deg, #1a1a30, #0f0f20); border: 1px solid var(--border); border-radius: 20px;
+    padding: 26px; width: 100%; max-width: 360px; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.8); animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative; flex-shrink: 0; text-align: center;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .modal-icon { font-size: 48px; margin-bottom: 12px; }
+  .modal-title { font-size: 18px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; }
+  .modal-text { font-size: 13px; color: #b0b0d0; margin-bottom: 22px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions button {
+    flex: 1; padding: 13px; border-radius: 12px; border: none; font-weight: 800; font-size: 13px;
+    letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; font-family: inherit;
+  }
+  .btn-cancel { background: rgba(255,255,255,0.08); color: #b0b0d0; }
+  .btn-cancel:hover { background: rgba(255,255,255,0.15); }
+  .btn-buy { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; }
+  .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,215,0,0.5); }
+  .btn-buy:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  @media (max-width: 640px) {
+    .topbar { padding: 12px 14px; }
+    .back-btn { padding: 8px 12px; font-size: 11px; }
+    .page-title { font-size: 16px; letter-spacing: 2px; }
+    .coin-box { padding: 6px 12px; }
+    .coin-amount { font-size: 13px; }
+    .tabs-wrap { padding: 0 14px 12px; }
+    .tab { padding: 10px; font-size: 11px; }
+    .shop-scroll { padding: 0 14px 20px; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .item-card { padding: 10px; }
+    .item-name { font-size: 12px; }
+    .item-preview.piece-preview { font-size: 42px; }
+  }
+
+  @media (max-width: 380px) {
+    .grid { grid-template-columns: 1fr; }
+    .page-title { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+  <audio id="sfxClick" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <button class="back-btn" id="backBtn">← KEMBALI</button>
+    <h1 class="page-title">SHOP</h1>
+    <div class="coin-box">
+      <div class="coin-icon"></div>
+      <div class="coin-amount" id="coinAmount">0</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-wrap">
+    <div class="tabs">
+      <button class="tab active" data-tab="board">♟️ PAPAN</button>
+      <button class="tab" data-tab="pieces">♞ BIDAK</button>
+    </div>
+  </div>
+
+  <!-- SHOP ITEMS (scroll) -->
+  <div class="shop-scroll">
+    <div class="grid" id="shopGrid"></div>
+  </div>
+
+  <!-- MODAL BELI -->
+  <div class="modal-overlay" id="buyModal">
+    <div class="modal">
+      <div class="modal-icon" id="buyModalIcon">🛒</div>
+      <div class="modal-title" id="buyModalTitle">Beli item?</div>
+      <div class="modal-text" id="buyModalText">Konfirmasi pembelian.</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelBuy">BATAL</button>
+        <button class="btn-buy" id="confirmBuy">BELI</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  /* =========================================================
+     KONFIGURASI API & STATE
+     ========================================================= */
+  const API_URL = "https://catur-destro.dedisurakhman234.workers.dev/api";
+  const CURRENT_USER = sessionStorage.getItem('chessUser') || (localStorage.getItem('chessOfflineMode') === 'true' ? 'Tamu' : null);
+  const IS_OFFLINE = localStorage.getItem('chessOfflineMode') === 'true';
+
+  if (!CURRENT_USER) window.location.href = 'login.html';
+
+  const sfxClick = document.getElementById('sfxClick');
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('button') || e.target.closest('.tab') || e.target.closest('.item-card')) {
+      if (sfxClick) { sfxClick.currentTime = 0; sfxClick.play().catch(() => {}); }
+    }
+  });
+
+  // STATE GLOBAL (Nol data game di localStorage untuk online)
+  let coins = 0;
+  let owned = { boards: ['default'], pieces: ['default'] };
+  let equipped = { board: 'default', pieces: 'default' };
+  let shopItems = { boards: [], pieces: [] };
+  let currentTab = 'board';
+
+  // Fallback (kalau API shop error)
+  const DEFAULT_SHOP_ITEMS = {
+    boards: [
+      { id: 'default', name: 'Klasik', desc: 'Papan catur klasik', price: 0, light: '#e8d8b8', dark: '#8a6d4a', accent: false },
+      { id: 'neon', name: 'Neon', desc: 'Papan neon bercahaya', price: 500, light: '#2a1b4a', dark: '#00e5ff', accent: true },
+      { id: 'wood', name: 'Kayu', desc: 'Papan kayu alami', price: 750, light: '#d4a373', dark: '#7f5539', accent: false }
+    ],
+    pieces: [
+      { id: 'default', name: 'Klasik', desc: 'Bidak klasik hitam-putih', price: 0, white: '#fff', black: '#111', shadow: '#000' }
+    ]
+  };
+
+  function getEquipKey() { return IS_OFFLINE ? 'chessEquipped_Tamu' : 'chessEquipped'; }
+  function loadEquipped() { equipped = JSON.parse(localStorage.getItem(getEquipKey()) || '{"board":"default","pieces":"default"}'); }
+  function saveEquipped() { localStorage.setItem(getEquipKey(), JSON.stringify(equipped)); }
+
+  /* =========================================================
+     FETCH API HELPER
+     ========================================================= */
+  async function fetchAPI(endpoint, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      return res;
+    } catch (e) {
+      clearTimeout(timeout);
+      throw e;
+    }
+  }
+
+  /* =========================================================
+     LOAD DATA (ONLINE DARI API, OFFLINE DARI LOCALSTORAGE)
+     ========================================================= */
+  async function fetchUserData() {
+    // 1. Ambil Shop Items
+    if (IS_OFFLINE) {
+      shopItems = DEFAULT_SHOP_ITEMS; // Fallback statis buat Tamu
+    } else {
+      try {
+        const resShop = await fetchAPI('/shop/items');
+        if (resShop.ok) {
+          const dataShop = await resShop.json();
+          if (dataShop.boards && dataShop.boards.length > 0) shopItems = dataShop;
+          else shopItems = DEFAULT_SHOP_ITEMS;
+        } else {
+          shopItems = DEFAULT_SHOP_ITEMS;
+        }
+      } catch (e) {
+        console.warn('Gagal ambil shop dari API, pakai default:', e);
+        shopItems = DEFAULT_SHOP_ITEMS;
+      }
+    }
+
+    // 2. Ambil Data User
+    if (IS_OFFLINE) {
+      coins = parseInt(localStorage.getItem('chessCoins_Tamu') || '100');
+      owned = JSON.parse(localStorage.getItem('chessOwned_Tamu') || '{"boards":["default"],"pieces":["default"]}');
+    } else {
+      try {
+        const res = await fetchAPI(`/user?username=${CURRENT_USER}`);
+        if (!res.ok) throw new Error('Gagal ambil data user');
+        const data = await res.json();
+        coins = data.coins;
+        owned = data.owned || { boards: ['default'], pieces: ['default'] };
+      } catch (e) {
+        console.warn('Gagal ambil user dari API:', e);
+        coins = 0;
+        owned = { boards: ['default'], pieces: ['default'] };
+      }
+    }
+
+    // Pastikan default selalu ada
+    if (!owned.boards) owned.boards = ['default'];
+    if (!owned.pieces) owned.pieces = ['default'];
+    if (!owned.boards.includes('default')) owned.boards.push('default');
+    if (!owned.pieces.includes('default')) owned.pieces.push('default');
+
+    loadEquipped();
+    updateCoins();
+    renderShop();
+  }
+
+  /* =========================================================
+     RENDER
+     ========================================================= */
+  const grid = document.getElementById('shopGrid');
+  const coinEl = document.getElementById('coinAmount');
+
+  function updateCoins() {
+    coinEl.textContent = coins.toLocaleString('en-US');
+  }
+
+  function renderShop() {
+    grid.innerHTML = '';
+    if (!shopItems.boards || !shopItems.pieces) {
+      grid.innerHTML = '<div class="loading-state"><div class="spinner"></div>Memuat shop...</div>';
+      return;
+    }
+
+    const items = currentTab === 'board' ? shopItems.boards : shopItems.pieces;
+    const ownedList = currentTab === 'board' ? owned.boards : owned.pieces;
+    const equippedId = currentTab === 'board' ? equipped.board : equipped.pieces;
+
+    if (!items || items.length === 0) {
+      grid.innerHTML = `<div class="empty-state">
+        <span class="emo">📦</span>
+        <div class="t">Belum ada item</div>
+        <div class="s">Admin belum menambahkan item di tab ini</div>
+      </div>`;
+      return;
+    }
+
+    items.forEach(item => {
+      const isOwned = ownedList.includes(item.id);
+      const isEquipped = equippedId === item.id;
+      const canBuy = coins >= item.price;
+
+      const card = document.createElement('div');
+      card.className = 'item-card' + (isOwned ? ' owned' : '');
+
+      // Badge
+      if (isEquipped) {
+        const badge = document.createElement('div');
+        badge.className = 'item-badge badge-equipped';
+        badge.textContent = 'DIPAKAI';
+        card.appendChild(badge);
+      } else if (isOwned) {
+        const badge = document.createElement('div');
+        badge.className = 'item-badge badge-owned';
+        badge.textContent = '✓ PUNYA';
+        card.appendChild(badge);
+      }
+
+      // Preview
+      const preview = document.createElement('div');
+      preview.className = 'item-preview ' + (currentTab === 'board' ? 'board-preview' : 'piece-preview');
+
+      if (currentTab === 'board') {
+        for (let i = 0; i < 16; i++) {
+          const s = document.createElement('div');
+          s.style.background = ((Math.floor(i / 4) + i) % 2 === 0) ? item.light : item.dark;
+          s.style.width = '100%';
+          s.style.height = '100%';
+          preview.appendChild(s);
+        }
+      } else {
+        preview.textContent = '♞';
+        preview.style.color = item.white;
+        preview.style.textShadow = '0 0 10px ' + item.shadow;
+      }
+      card.appendChild(preview);
+
+      // Name
+      const name = document.createElement('div');
+      name.className = 'item-name';
+      name.textContent = item.name;
+      card.appendChild(name);
+
+      // Desc
+      const desc = document.createElement('div');
+      desc.className = 'item-desc';
+      desc.textContent = item.desc || '';
+      card.appendChild(desc);
+
+      // Button
+      const btn = document.createElement('button');
+      btn.className = 'buy-btn';
+
+      if (isEquipped) {
+        btn.classList.add('equipped-btn');
+        btn.textContent = '✓ DIPAKAI';
+        btn.disabled = true;
+      } else if (isOwned) {
+        btn.classList.add('owned-btn');
+        btn.textContent = 'PAKAI';
+        btn.addEventListener('click', () => equipItem(item.id));
+      } else if (canBuy) {
+        btn.classList.add('can-buy');
+        btn.innerHTML = `<span class="buy-price"><span class="mini-coin"></span>${item.price.toLocaleString('en-US')}</span>`;
+        btn.addEventListener('click', () => showBuyModal(item));
+      } else {
+        btn.classList.add('cant-buy');
+        btn.innerHTML = `🔒 <span class="buy-price"><span class="mini-coin"></span>${item.price.toLocaleString('en-US')}</span>`;
+        btn.disabled = true;
+      }
+
+      card.appendChild(btn);
+      grid.appendChild(card);
+    });
+  }
+
+  /* =========================================================
+     TAB SWITCH
+     ========================================================= */
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentTab = tab.dataset.tab;
+      renderShop();
+    });
+  });
+
+  /* =========================================================
+     EQUIP (cuma preferensi tampilan, boleh localStorage)
+     ========================================================= */
+  function equipItem(id) {
+    if (currentTab === 'board') equipped.board = id;
+    else equipped.pieces = id;
+    saveEquipped();
+    renderShop();
+    showToast('✅ Item berhasil dipakai!');
+  }
+
+  /* =========================================================
+     BUY
+     ========================================================= */
+  let pendingItem = null;
+
+  function showBuyModal(item) {
+    pendingItem = item;
+    const isBoard = currentTab === 'board';
+    document.getElementById('buyModalIcon').textContent = isBoard ? '🏁' : '♞';
+    document.getElementById('buyModalTitle').textContent = 'Beli ' + item.name + '?';
+    document.getElementById('buyModalText').innerHTML =
+      `Harga: <b style="color:var(--gold)">${item.price.toLocaleString('en-US')} koin</b><br>
+       Koin kamu: <b>${coins.toLocaleString('en-US')}</b>`;
+    document.getElementById('buyModal').classList.add('show');
+  }
+
+  document.getElementById('cancelBuy').addEventListener('click', () => {
+    document.getElementById('buyModal').classList.remove('show');
+    pendingItem = null;
+  });
+
+  document.getElementById('buyModal').addEventListener('click', (e) => {
+    if (e.target.id === 'buyModal') {
+      document.getElementById('buyModal').classList.remove('show');
+      pendingItem = null;
+    }
+  });
+
+  document.getElementById('confirmBuy').addEventListener('click', async () => {
+    if (!pendingItem) return;
+    if (coins < pendingItem.price) {
+      showToast('❌ Koin tidak cukup!', true);
+      return;
+    }
+
+    const buyBtn = document.getElementById('confirmBuy');
+    const originalText = buyBtn.textContent;
+    buyBtn.disabled = true;
+    buyBtn.textContent = 'MEMPROSES...';
+
+    // --- MODE OFFLINE / TAMU: PAKAI LOCALSTORAGE (SUFFIX _TAMU) ---
+    if (IS_OFFLINE) {
+      coins -= pendingItem.price;
+      localStorage.setItem('chessCoins_Tamu', coins);
+      updateCoins();
+
+      if (currentTab === 'board') owned.boards.push(pendingItem.id);
+      else owned.pieces.push(pendingItem.id);
+      localStorage.setItem('chessOwned_Tamu', JSON.stringify(owned));
+
+      document.getElementById('buyModal').classList.remove('show');
+      showToast('🎉 ' + pendingItem.name + ' berhasil dibeli!');
+      pendingItem = null;
+      buyBtn.disabled = false;
+      buyBtn.textContent = originalText;
+      renderShop();
+      return;
+    }
+
+    // --- MODE ONLINE: TEMBAK KE API ---
+    try {
+      const res = await fetchAPI('/buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: CURRENT_USER, 
+          itemId: pendingItem.id, 
+          price: pendingItem.price 
+        })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal membeli');
+
+      // Sinkron dari RESPONSE API (bukan ngitung manual)
+      coins = data.newCoins;
+      owned = data.owned;
+      updateCoins();
+
+      document.getElementById('buyModal').classList.remove('show');
+      showToast('🎉 ' + pendingItem.name + ' berhasil dibeli!');
+      renderShop();
+      
+    } catch (err) {
+      showToast('❌ ' + err.message, true);
+      // Kalau error, refresh data dari API
+      fetchUserData();
+    } finally {
+      pendingItem = null;
+      buyBtn.disabled = false;
+      buyBtn.textContent = originalText;
+    }
+  });
+
+  /* =========================================================
+     TOAST
+     ========================================================= */
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', isError);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* =========================================================
+     BACK
+     ========================================================= */
+  document.getElementById('backBtn').addEventListener('click', () => {
+    window.location.href = 'home.html';
+  });
+
+  /* =========================================================
+     INIT
+     ========================================================= */
+  loadEquipped();
+  fetchUserData();
+</script>
+
+</body>
+</html>
