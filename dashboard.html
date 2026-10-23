@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chess - Admin Dashboard</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --gold: #ffd700;
+    --gold-dark: #b8860b;
+    --bg-dark: #0a0a1a;
+    --panel: rgba(20, 20, 40, 0.85);
+    --border: rgba(255, 215, 0, 0.25);
+    --green: #4dff88;
+    --red: #ff4d4d;
+  }
+
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    height: 100vh;
+    height: 100dvh;
+    font-family: 'Segoe UI', sans-serif;
+    background: #0a0a1a;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    isolation: isolate;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, #12122a 25%, transparent 25%),
+      linear-gradient(-45deg, #12122a 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #12122a 75%),
+      linear-gradient(-45deg, transparent 75%, #12122a 75%);
+    background-size: 70px 70px;
+    background-position: 0 0, 0 35px, 35px -35px, -35px 0px;
+    opacity: 0.5;
+    animation: bgMove 40s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @keyframes bgMove {
+    from { background-position: 0 0, 0 35px, 35px -35px, -35px 0px; }
+    to { background-position: 70px 70px, 70px 105px, 105px 35px, 35px 70px; }
+  }
+
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .orb-1 { width: 400px; height: 400px; background: #ffd700; top: -120px; left: -100px; }
+  .orb-2 { width: 350px; height: 350px; background: #6a00ff; bottom: -100px; right: -80px; }
+
+  /* ===== LOGIN ADMIN ===== */
+  .login-screen {
+    position: fixed; inset: 0; z-index: 1000; background: #0a0a1a;
+    display: flex; justify-content: center; align-items: center; padding: 20px;
+  }
+  .login-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+    padding: 30px; width: 100%; max-width: 360px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  }
+  .login-box h1 { font-size: 24px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; }
+  .login-box p { font-size: 12px; color: #8888aa; margin-bottom: 20px; }
+  .admin-input {
+    width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px; color: #fff; font-size: 14px; outline: none; text-align: center;
+    letter-spacing: 2px; margin-bottom: 16px;
+  }
+  .admin-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255,215,0,0.1); }
+  .admin-btn {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a;
+    font-weight: 900; font-size: 14px; letter-spacing: 1px; cursor: pointer;
+  }
+  .admin-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,215,0,0.4); }
+
+  /* ===== APP UI ===== */
+  .app-container { display: none; flex-direction: column; height: 100%; }
+  .app-container.show { display: flex; }
+
+  .topbar {
+    position: relative; z-index: 10; display: flex; justify-content: space-between;
+    align-items: center; padding: 16px 24px; gap: 12px; flex-shrink: 0; width: 100%;
+    border-bottom: 1px solid rgba(255,215,0,0.15); backdrop-filter: blur(10px); background: rgba(10,10,26,0.5);
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border);
+    padding: 10px 18px; border-radius: 14px; color: #fff; cursor: pointer; transition: 0.2s;
+    font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  }
+  .back-btn:hover { border-color: var(--gold); transform: translateX(-3px); }
+  .page-title {
+    font-size: 20px; font-weight: 900; letter-spacing: 3px;
+    background: linear-gradient(90deg, #ffd700, #fff8dc, #ffd700); background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite; text-align: center;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+  
+  .admin-badge {
+    display: flex; align-items: center; gap: 8px; background: rgba(255,215,0,0.1);
+    border: 1px solid var(--border); padding: 8px 14px; border-radius: 30px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--gold);
+  }
+  .admin-badge .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 8px var(--green); animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ===== TABS ===== */
+  .tabs-wrap {
+    position: relative; z-index: 10; display: flex; justify-content: center;
+    padding: 14px 24px; flex-shrink: 0;
+  }
+  .tabs {
+    display: flex; background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 5px; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    width: 100%; max-width: 560px; gap: 4px;
+  }
+  .tab {
+    flex: 1; padding: 11px 8px; border: none; background: transparent; color: #8888aa;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px; border-radius: 12px; cursor: pointer;
+    transition: 0.25s; font-family: inherit; display: flex; align-items: center; justify-content: center;
+    gap: 5px; white-space: nowrap;
+  }
+  .tab.active { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; box-shadow: 0 4px 14px rgba(255, 215, 0, 0.4); }
+
+  /* ===== CONTENT ===== */
+  .content {
+    flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 24px 24px;
+    position: relative; z-index: 5; -webkit-overflow-scrolling: touch;
+  }
+  .content::-webkit-scrollbar { width: 8px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 10px; }
+  .content::-webkit-scrollbar-thumb:hover { background: rgba(255,215,0,0.5); }
+
+  .tab-panel { display: none; max-width: 1000px; margin: 0 auto; }
+  .tab-panel.active { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Toolbar */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar-info { font-size: 12px; color: #8888aa; letter-spacing: 0.5px; }
+  .toolbar-info b { color: var(--gold); }
+  .add-btn {
+    padding: 12px 22px; border-radius: 12px; border: none; background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #1a1a1a; font-weight: 800; font-size: 13px; letter-spacing: 1px; cursor: pointer;
+    transition: 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+  }
+  .add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(255,215,0,0.5); }
+
+  /* Item list */
+  .item-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .item-row {
+    background: var(--panel); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 16px;
+    padding: 14px; backdrop-filter: blur(10px); transition: 0.25s; display: flex;
+    gap: 14px; align-items: center; position: relative;
+  }
+  .item-row:hover { border-color: rgba(255,215,0,0.35); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+
+  .item-preview {
+    width: 70px; height: 70px; border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .item-preview.board-preview { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+  .item-preview.piece-preview { background: rgba(0,0,0,0.4); font-size: 40px; }
+
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .item-id { font-size: 9px; color: #55557a; font-family: monospace; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+  .item-meta { font-size: 11px; color: #8888aa; letter-spacing: 0.3px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-price { font-size: 12px; font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .item-price .mini-coin { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3a0, #ffd700 40%, #b8860b); }
+  .item-free { color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+
+  .item-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04); color: #b0b0d0; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 15px; transition: 0.2s;
+  }
+  .icon-btn:hover { transform: scale(1.08); }
+  .icon-btn.edit:hover { background: rgba(0,229,255,0.15); border-color: #00e5ff; color: #00e5ff; }
+  .icon-btn.del:hover { background: rgba(255,60,60,0.15); border-color: var(--red); color: var(--red); }
+
+  .lock-tag {
+    position: absolute; top: 8px; right: 8px; font-size: 8px; background: rgba(255,215,0,0.15);
+    color: var(--gold); border: 1px solid var(--border); padding: 2px 6px; border-radius: 6px;
+    font-weight: 700; letter-spacing: 0.5px;
+  }
+
+  /* Empty */
+  .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #55557a; }
+  .empty-state .emo { font-size: 56px; display: block; margin-bottom: 16px; opacity: 0.5; }
+  .empty-state .t { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: #8888aa; }
+  .empty-state .s { font-size: 12px; }
+
+  /* ===== USERS TAB ===== */
+  .user-card {
+    background: var(--panel); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 16px;
+    padding: 16px; backdrop-filter: blur(10px); display: flex; align-items: center;
+    gap: 14px; flex-wrap: wrap;
+  }
+  .user-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8c00);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+    position: relative;
+  }
+  .user-avatar.online::after {
+    content: ''; position: absolute; bottom: 0; right: 0; width: 12px; height: 12px;
+    background: var(--green); border: 2px solid #1a1a30; border-radius: 50%; box-shadow: 0 0 8px var(--green);
+  }
+  .user-info { flex: 1; min-width: 120px; }
+  .user-name { font-size: 14px; font-weight: 800; }
+  .user-sub { font-size: 11px; color: #8888aa; margin-top: 2px; }
+  
+  .user-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .u-stat { font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); color: #ccc; }
+  .u-stat b { color: var(--gold); }
+
+  .coin-edit-btn {
+    padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.3);
+    background: rgba(255,215,0,0.1); color: var(--gold); font-weight: 700;
+    font-size: 11px; cursor: pointer; transition: 0.2s; font-family: inherit; letter-spacing: 0.5px;
+  }
+  .coin-edit-btn:hover { background: rgba(255,215,0,0.2); transform: translateY(-2px); }
+
+  /* ===== SETTINGS ===== */
+  .settings-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; backdrop-filter: blur(10px); margin-bottom: 14px; }
+  .settings-title { font-size: 14px; font-weight: 800; color: var(--gold); letter-spacing: 1px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .settings-desc { font-size: 12px; color: #8888aa; margin-bottom: 16px; line-height: 1.5; }
+
+  .action-btn {
+    padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05); color: #fff; font-weight: 700; font-size: 12px;
+    letter-spacing: 1px; cursor: pointer; transition: 0.2s; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .action-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,215,0,0.4); }
+  .action-btn.danger { background: rgba(255,60,60,0.1); border-color: rgba(255,60,60,0.3); color: #ff7a7a; }
+  .action-btn.danger:hover { background: rgba(255,60,60,0.2); border-color: var(--red); }
+  .action-btn.primary { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; border: none; }
+  .action-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(255,215,0,0.4); }
+  
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 4px; }
+  .stat-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-val { font-size: 22px; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 10px; color: #8888aa; letter-spacing: 1px; font-weight: 600; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s; overflow-y: auto;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: linear-gradient(180deg, #1a1a30, #0f0f20); border: 1px solid var(--border); border-radius: 20px;
+    padding: 24px; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.8); animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative; flex-shrink: 0;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .modal-title { font-size: 18px; font-weight: 900; letter-spacing: 1px; color: var(--gold); margin-bottom: 6px; padding-right: 40px; }
+  .modal-sub { font-size: 12px; color: #8888aa; margin-bottom: 20px; }
+  .modal-close {
+    position: absolute; top: 18px; right: 18px; width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); border: none; color: #8888aa; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+  }
+  .modal-close:hover { background: rgba(255,60,60,0.2); color: #ff7a7a; }
+
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 11px; letter-spacing: 1.2px; color: #8888aa; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; }
+  .form-input, .form-select {
+    width: 100%; padding: 11px 14px; background: rgba(0,0,0,0.35); border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px; color: #fff; font-size: 13px; font-family: inherit; outline: none; transition: 0.2s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--gold); background: rgba(0,0,0,0.5); box-shadow: 0 0 0 3px rgba(255,215,0,0.1); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .color-row { display: flex; align-items: center; gap: 10px; }
+  .color-input { width: 44px; height: 44px; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px; cursor: pointer; background: none; padding: 2px; flex-shrink: 0; }
+  .color-text { flex: 1; padding: 11px 14px; background: rgba(0,0,0,0.35); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 13px; font-family: monospace; outline: none; text-transform: uppercase; }
+  .color-text:focus { border-color: var(--gold); }
+
+  .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 10px; cursor: pointer; }
+  .checkbox-row input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
+  .checkbox-row label { font-size: 12px; color: #b0b0d0; cursor: pointer; flex: 1; }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions button { flex: 1; padding: 13px; border-radius: 12px; border: none; font-weight: 800; font-size: 13px; letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; font-family: inherit; }
+  .btn-cancel { background: rgba(255,255,255,0.08); color: #b0b0d0; }
+  .btn-cancel:hover { background: rgba(255,255,255,0.15); }
+  .btn-save { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; }
+  .btn-save:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,215,0,0.5); }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Status Box */
+  .status-box {
+    padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 700; margin-top: 10px; display: none; text-align: center; letter-spacing: 0.5px;
+  }
+  .status-box.valid { display: block; background: rgba(77,255,136,0.1); border: 1px solid rgba(77,255,136,0.3); color: var(--green); }
+  .status-box.warning { display: block; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); }
+  .status-box.error { display: block; background: rgba(255,60,60,0.1); border: 1px solid rgba(255,60,60,0.3); color: var(--red); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; padding: 12px 24px;
+    border-radius: 30px; font-weight: 800; font-size: 13px; letter-spacing: 1px;
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.5); z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none;
+    max-width: calc(100vw - 40px); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
+
+  @media (max-width: 640px) {
+    .topbar { padding: 12px 14px; }
+    .page-title { font-size: 15px; letter-spacing: 2px; }
+    .back-btn { padding: 8px 12px; font-size: 11px; }
+    .admin-badge { padding: 6px 10px; font-size: 10px; }
+    .tabs-wrap { padding: 12px 14px; }
+    .tab { font-size: 10px; padding: 10px 4px; }
+    .content { padding: 0 14px 20px; }
+    .item-list { grid-template-columns: 1fr; }
+    .toolbar { gap: 8px; }
+    .add-btn { padding: 10px 16px; font-size: 12px; }
+    .user-card { padding: 12px; }
+  }
+  @media (max-width: 400px) { .form-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+  <!-- ===== LOGIN ADMIN ===== -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+      <h1>🔐 ADMIN</h1>
+      <p>Masukkan kunci akses untuk melanjutkan</p>
+      <input type="password" id="adminKeyInput" class="admin-input" placeholder="ADMIN KEY...">
+      <button id="loginBtn" class="admin-btn">MASUK</button>
+    </div>
+  </div>
+
+  <!-- ===== APP UI ===== -->
+  <div class="app-container" id="appContainer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="topbar">
+      <button class="back-btn" id="backBtn">← HOME</button>
+      <h1 class="page-title">DASHBOARD</h1>
+      <div class="admin-badge"><span class="dot"></span> ADMIN</div>
+    </div>
+
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <button class="tab active" data-tab="users">👥 USER</button>
+        <button class="tab" data-tab="boards">♟️ PAPAN</button>
+        <button class="tab" data-tab="pieces">♞ BIDAK</button>
+        <button class="tab" data-tab="settings">⚙️ SETELAN</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- USERS -->
+      <div class="tab-panel active" id="panel-users">
+        <div class="toolbar">
+          <div class="toolbar-info">Total: <b id="userCount">0</b> user terdaftar</div>
+          <button class="add-btn" id="refreshUsersBtn">🔄 REFRESH</button>
+        </div>
+        <div class="item-list" id="userList" style="grid-template-columns:1fr;"></div>
+      </div>
+
+      <!-- BOARDS -->
+      <div class="tab-panel" id="panel-boards">
+        <div class="toolbar">
+          <div class="toolbar-info">Total: <b id="boardCount">0</b> papan</div>
+          <button class="add-btn" data-add="board">+ TAMBAH PAPAN</button>
+        </div>
+        <div class="item-list" id="boardList"></div>
+      </div>
+
+      <!-- PIECES -->
+      <div class="tab-panel" id="panel-pieces">
+        <div class="toolbar">
+          <div class="toolbar-info">Total: <b id="pieceCount">0</b> bidak</div>
+          <button class="add-btn" data-add="piece">+ TAMBAH BIDAK</button>
+        </div>
+        <div class="item-list" id="pieceList"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="tab-panel" id="panel-settings">
+        
+        <!-- VOICE SETTINGS -->
+        <div class="settings-card">
+          <div class="settings-title">🎙️ PENGATURAN VOICE (AGORA)</div>
+          <div class="settings-desc">Isi App ID dan Token Agora di sini. Token expired tiap 24 jam, jadi harus diganti rutin.</div>
+          
+          <div class="form-group">
+            <label class="form-label">Agora App ID</label>
+            <input type="text" class="form-input" id="agoraAppIdInput" placeholder="Contoh: 9b16af...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Agora Token</label>
+            <input type="text" class="form-input" id="agoraTokenInput" placeholder="007eJx...">
+            <div id="tokenStatus" class="status-box"></div>
+          </div>
+
+          <div class="btn-group">
+            <button class="action-btn primary" id="saveAgoraBtn">💾 SIMPAN PENGATURAN</button>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">📊 STATISTIK</div>
+          <div class="settings-desc">Ringkasan data game saat ini.</div>
+          <div class="stats-grid">
+            <div class="stat-box"><div class="stat-val" id="statBoards">0</div><div class="stat-label">PAPAN</div></div>
+            <div class="stat-box"><div class="stat-val" id="statPieces">0</div><div class="stat-label">BIDAK</div></div>
+            <div class="stat-box"><div class="stat-val" id="statUsers">0</div><div class="stat-label">USER</div></div>
+            <div class="stat-box"><div class="stat-val" id="statOnline">0</div><div class="stat-label">ONLINE</div></div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">⚠️ ZONA BAHAYA</div>
+          <div class="settings-desc">Hapus SEMUA data game (user, koin, item, progress). Tidak bisa dibatalkan!</div>
+          <div class="btn-group">
+            <button class="action-btn danger" id="resetAllBtn">🗑️ HAPUS SEMUA DATA</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORM ITEM -->
+  <div class="modal-overlay" id="itemModal">
+    <div class="modal">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-title" id="modalTitle">Tambah Item</div>
+      <div class="modal-sub" id="modalSub">Isi data item baru.</div>
+
+      <form id="itemForm">
+        <div class="form-group">
+          <label class="form-label">ID (unik, huruf kecil/angka/_)</label>
+          <input type="text" class="form-input" id="fId" placeholder="contoh: neon_blue" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Item</label>
+          <input type="text" class="form-input" id="fName" placeholder="contoh: Neon Blue" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deskripsi</label>
+          <input type="text" class="form-input" id="fDesc" placeholder="Deskripsi singkat...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Harga (koin)</label>
+          <input type="number" class="form-input" id="fPrice" placeholder="0" min="0" value="0" required>
+        </div>
+
+        <div id="boardFields">
+          <div class="form-group">
+            <label class="form-label">Warna Petak Terang</label>
+            <div class="color-row">
+              <input type="color" class="color-input" id="fLightColor" value="#e8d8b8">
+              <input type="text" class="color-text" id="fLightText" value="#e8d8b8">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Warna Petak Gelap</label>
+            <div class="color-row">
+              <input type="color" class="color-input" id="fDarkColor" value="#8a6d4a">
+              <input type="text" class="color-text" id="fDarkText" value="#8a6d4a">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="checkbox-row">
+              <input type="checkbox" id="fAccent">
+              <label for="fAccent">Efek glow accent (neon)</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="pieceFields" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Warna Bidak Putih</label>
+            <div class="color-row">
+              <input type="color" class="color-input" id="fWhiteColor" value="#ffffff">
+              <input type="text" class="color-text" id="fWhiteText" value="#ffffff">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Warna Bidak Hitam</label>
+            <div class="color-row">
+              <input type="color" class="color-input" id="fBlackColor" value="#111111">
+              <input type="text" class="color-text" id="fBlackText" value="#111111">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Warna Shadow Bidak</label>
+            <div class="color-row">
+              <input type="color" class="color-input" id="fShadowColor" value="#000000">
+              <input type="text" class="color-text" id="fShadowText" value="#000000">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="cancelForm">BATAL</button>
+          <button type="submit" class="btn-save" id="saveForm">SIMPAN</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT USER -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal">
+      <button class="modal-close" id="userModalClose">✕</button>
+      <div class="modal-title">Edit User</div>
+      <div class="modal-sub" id="userModalName">-</div>
+
+      <form id="userForm">
+        <div class="form-group">
+          <label class="form-label">Koin</label>
+          <input type="number" class="form-input" id="uCoins" min="0" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Level</label>
+            <input type="number" class="form-input" id="uLevel" min="1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rank (Bintang 0-44)</label>
+            <input type="number" class="form-input" id="uRank" min="0" max="44" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">EXP</label>
+            <input type="number" class="form-input" id="uExp" min="0" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">EXP Next</label>
+            <input type="number" class="form-input" id="uExpNext" min="1" required>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="cancelUser">BATAL</button>
+          <button type="submit" class="btn-save" id="saveUser">SIMPAN</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRM -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width:360px;text-align:center;">
+      <div style="font-size:48px;margin-bottom:12px;" id="confirmIcon">⚠️</div>
+      <div class="modal-title" style="text-align:center;padding-right:0;" id="confirmTitle">Yakin?</div>
+      <div class="modal-sub" style="text-align:center;" id="confirmText">Aksi ini tidak bisa dibatalkan.</div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="cancelConfirm">BATAL</button>
+        <button type="button" class="btn-save" id="okConfirm" style="background:linear-gradient(135deg,#ff4d4d,#cc0000);color:#fff;">HAPUS</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const API_URL = "https://catur-destro.dedisurakhman234.workers.dev/api";
+  let ADMIN_KEY = sessionStorage.getItem('chessAdminKey') || '';
+
+  async function fetchAdminAPI(endpoint, options = {}) {
+    const headers = { ...options.headers, 'X-Admin-Key': ADMIN_KEY };
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+      if (res.status === 401) {
+        sessionStorage.removeItem('chessAdminKey');
+        location.reload();
+      }
+      return res;
+    } catch (e) { throw e; }
+  }
+
+  const loginScreen = document.getElementById('loginScreen');
+  const appContainer = document.getElementById('appContainer');
+  const loginBtn = document.getElementById('loginBtn');
+  const adminKeyInput = document.getElementById('adminKeyInput');
+
+  loginBtn.addEventListener('click', async () => {
+    const key = adminKeyInput.value.trim();
+    if (!key) return showToast('Masukkan kunci!', true);
+    loginBtn.disabled = true; loginBtn.textContent = 'MEMPROSES...';
+    ADMIN_KEY = key;
+    try {
+      const res = await fetch(`${API_URL}/admin/users`, { headers: { 'X-Admin-Key': key } });
+      if (res.status === 401) throw new Error('Kunci salah!');
+      sessionStorage.setItem('chessAdminKey', key);
+      loginScreen.style.display = 'none';
+      appContainer.classList.add('show');
+      showToast('✅ Login berhasil');
+      loadAllData();
+    } catch (e) {
+      showToast('❌ ' + e.message, true);
+      ADMIN_KEY = '';
+    } finally {
+      loginBtn.disabled = false; loginBtn.textContent = 'MASUK';
+    }
+  });
+
+  adminKeyInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginBtn.click(); });
+
+  if (ADMIN_KEY) {
+    loginScreen.style.display = 'none';
+    appContainer.classList.add('show');
+    loadAllData();
+  }
+
+  let currentTab = 'users';
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentTab = tab.dataset.tab;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + currentTab).classList.add('active');
+      if (currentTab === 'users') loadUsers();
+      if (currentTab === 'boards' || currentTab === 'pieces') loadShop();
+      if (currentTab === 'settings') loadSettings();
+    });
+  });
+
+  function loadAllData() {
+    loadUsers();
+    loadShop();
+    loadSettings();
+  }
+
+  /* =========================================================
+     FITUR: SETTINGS & TOKEN VALIDATION
+     ========================================================= */
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${API_URL}/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('agoraAppIdInput').value = data.agora_app_id || '';
+        document.getElementById('agoraTokenInput').value = data.agora_token || '';
+        validateToken(data.agora_token || '');
+      }
+    } catch (e) {}
+  }
+
+  function validateToken(token) {
+    const statusBox = document.getElementById('tokenStatus');
+    statusBox.className = 'status-box';
+    statusBox.textContent = '';
+
+    if (!token) {
+      statusBox.className = 'status-box warning';
+      statusBox.textContent = '⚠️ Token kosong. Voice chat gak bakal jalan.';
+      return;
+    }
+
+    if (!token.startsWith('007')) {
+      statusBox.className = 'status-box error';
+      statusBox.textContent = '❌ Format token tidak valid (harus depannya 007eJx...)';
+      return;
+    }
+
+    // Cek Expired (Base64 Decode)
+    try {
+      const payloadBase64 = token.split('.')[1] || token.split('.')[0]; 
+      // Agora token formatnya agak beda, kita coba heuristic sederhana
+      // Token Agora biasanya base64 dengan payload timestamp di dalamnya.
+      const decoded = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+      
+      // Heuristic: Cari angka 10 digit (Unix timestamp) di string decoded
+      const match = decoded.match(/\d{10}/g);
+      if (match) {
+        // Ambil timestamp terakhir sebagai expired time (biasanya 24 jam dr sekarang)
+        const expireTime = parseInt(match[match.length - 1]) * 1000;
+        const now = Date.now();
+        
+        if (now > expireTime) {
+          statusBox.className = 'status-box error';
+          statusBox.textContent = '❌ Token sudah EXPIRED! Ganti dengan token baru.';
+          return;
+        } else {
+           const sisaJam = Math.round((expireTime - now) / (1000 * 60 * 60));
+           statusBox.className = 'status-box valid';
+           statusBox.textContent = `✅ Token valid. Sisa waktu: ~${sisaJam} jam lagi.`;
+           return;
+        }
+      }
+    } catch (e) {
+      // Skip error decoding
+    }
+
+    statusBox.className = 'status-box valid';
+    statusBox.textContent = '✅ Token tersimpan. (Cek expired otomatis gagal, pastiin ganti tiap 24 jam).';
+  }
+
+  document.getElementById('agoraTokenInput').addEventListener('input', (e) => {
+    validateToken(e.target.value.trim());
+  });
+
+  document.getElementById('saveAgoraBtn').addEventListener('click', async () => {
+    const appId = document.getElementById('agoraAppIdInput').value.trim();
+    const token = document.getElementById('agoraTokenInput').value.trim();
+    if (!appId || !token) return showToast('App ID & Token gak boleh kosong!', true);
+
+    const btn = document.getElementById('saveAgoraBtn');
+    btn.disabled = true; btn.textContent = 'MENYIMPAN...';
+
+    try {
+      const res = await fetchAdminAPI('/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agora_app_id: appId, agora_token: token })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal simpan');
+
+      showToast('✅ Pengaturan Voice berhasil disimpan!');
+    } catch (e) {
+      showToast('❌ ' + e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 SIMPAN PENGATURAN';
+    }
+  });
+
+  /* =========================================================
+     USERS
+     ========================================================= */
+  let allUsers = [];
+
+  async function loadUsers() {
+    document.getElementById('userList').innerHTML = '<div class="empty-state"><div class="t">Memuat data user...</div></div>';
+    try {
+      const res = await fetchAdminAPI('/admin/users');
+      if (!res.ok) throw new Error('Gagal ambil data');
+      const data = await res.json();
+      allUsers = data.users || [];
+      document.getElementById('userCount').textContent = allUsers.length;
+      document.getElementById('statUsers').textContent = allUsers.length;
+      document.getElementById('statOnline').textContent = allUsers.filter(u => u.online).length;
+      renderUsers();
+    } catch (e) {
+      document.getElementById('userList').innerHTML = `<div class="empty-state"><div class="t">❌ Gagal memuat: ${e.message}</div></div>`;
+    }
+  }
+
+  function renderUsers() {
+    const list = document.getElementById('userList');
+    list.innerHTML = '';
+    if (allUsers.length === 0) {
+      list.innerHTML = '<div class="empty-state"><span class="emo">👥</span><div class="t">Belum ada user</div></div>';
+      return;
+    }
+
+    allUsers.forEach(u => {
+      const card = document.createElement('div');
+      card.className = 'user-card';
+      card.innerHTML = `
+        <div class="user-avatar ${u.online ? 'online' : ''}">${u.username[0].toUpperCase()}</div>
+        <div class="user-info">
+          <div class="user-name">${u.username} <span style="font-size:9px;color:${u.online ? 'var(--green)' : '#888'};font-weight:600;">${u.online ? '● ONLINE' : '○ OFFLINE'}</span></div>
+          <div class="user-sub">ID: ${u.tg_id} • Daftar: ${new Date((u.created_at||0) * 1000).toLocaleDateString('id-ID')}</div>
+          <div class="user-stats">
+            <div class="u-stat">🪙 <b>${u.coins.toLocaleString('en-US')}</b></div>
+            <div class="u-stat">⭐ Lv.<b>${u.level}</b></div>
+            <div class="u-stat">🏆 <b>${u.rank_stars}</b>★</div>
+            <div class="u-stat">📊 ${u.wins}W ${u.losses}L</div>
+          </div>
+        </div>
+        <button class="coin-edit-btn">✏️ EDIT</button>
+      `;
+      card.querySelector('.coin-edit-btn').addEventListener('click', () => openUserModal(u));
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById('refreshUsersBtn').addEventListener('click', loadUsers);
+
+  /* =========================================================
+     USER MODAL
+     ========================================================= */
+  let editingUser = null;
+  const userModal = document.getElementById('userModal');
+
+  function openUserModal(user) {
+    editingUser = user;
+    document.getElementById('userModalName').textContent = 'User: ' + user.username;
+    document.getElementById('uCoins').value = user.coins;
+    document.getElementById('uLevel').value = user.level;
+    document.getElementById('uRank').value = user.rank_stars || 0;
+    document.getElementById('uExp').value = user.exp || 0;
+    document.getElementById('uExpNext').value = user.exp_to_next || 10;
+    userModal.classList.add('show');
+  }
+
+  document.getElementById('userModalClose').addEventListener('click', () => userModal.classList.remove('show'));
+  document.getElementById('cancelUser').addEventListener('click', () => userModal.classList.remove('show'));
+
+  document.getElementById('userForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    const saveBtn = document.getElementById('saveUser');
+    saveBtn.disabled = true; saveBtn.textContent = 'MENYIMPAN...';
+
+    try {
+      const res = await fetchAdminAPI('/admin/set-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: editingUser.username,
+          coins: parseInt(document.getElementById('uCoins').value),
+          level: parseInt(document.getElementById('uLevel').value),
+          rank_stars: parseInt(document.getElementById('uRank').value),
+          exp: parseInt(document.getElementById('uExp').value),
+          exp_to_next: parseInt(document.getElementById('uExpNext').value)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
+      showToast('✅ Data user diupdate!');
+      userModal.classList.remove('show');
+      loadUsers(); 
+    } catch (e) {
+      showToast('❌ ' + e.message, true);
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = 'SIMPAN';
+    }
+  });
+
+  /* =========================================================
+     SHOP ITEMS
+     ========================================================= */
+  let shopData = { items: [] };
+
+  async function loadShop() {
+    document.getElementById('boardList').innerHTML = '<div class="empty-state"><div class="t">Memuat...</div></div>';
+    document.getElementById('pieceList').innerHTML = '<div class="empty-state"><div class="t">Memuat...</div></div>';
+    try {
+      const res = await fetchAdminAPI('/admin/shop/list');
+      if (!res.ok) throw new Error('Gagal ambil shop');
+      const data = await res.json();
+      shopData.items = data.items || [];
+      renderShop('board');
+      renderShop('piece');
+    } catch (e) {
+      showToast('Gagal load shop: ' + e.message, true);
+    }
+  }
+
+  function renderShop(category) {
+    const list = document.getElementById(category === 'board' ? 'boardList' : 'pieceList');
+    const countEl = document.getElementById(category === 'board' ? 'boardCount' : 'pieceCount');
+    const items = shopData.items.filter(i => i.category === category);
+    list.innerHTML = '';
+    countEl.textContent = items.length;
+    if (category === 'board') document.getElementById('statBoards').textContent = items.length;
+    if (category === 'piece') document.getElementById('statPieces').textContent = items.length;
+
+    if (items.length === 0) {
+      list.innerHTML = `<div class="empty-state"><span class="emo">📦</span><div class="t">Belum ada item</div><div class="s">Klik "+ TAMBAH" untuk mulai</div></div>`;
+      return;
+    }
+
+    items.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      if (item.id === 'board_default' || item.id === 'piece_default') {
+        const lock = document.createElement('div');
+        lock.className = 'lock-tag';
+        lock.textContent = '🔒 DEFAULT';
+        row.appendChild(lock);
+      }
+
+      const prev = document.createElement('div');
+      prev.className = 'item-preview ' + (category === 'board' ? 'board-preview' : 'piece-preview');
+      if (category === 'board') {
+        for (let i = 0; i < 16; i++) {
+          const s = document.createElement('div');
+          s.style.background = ((Math.floor(i / 4) + i) % 2 === 0) ? item.light : item.dark;
+          prev.appendChild(s);
+        }
+      } else {
+        prev.textContent = '♞';
+        prev.style.color = item.white;
+        prev.style.textShadow = '0 0 10px ' + item.shadow;
+      }
+      row.appendChild(prev);
+
+      const info = document.createElement('div');
+      info.className = 'item-info';
+      const displayId = item.id.replace(/^board_/, '').replace(/^piece_/, '');
+      info.innerHTML = `
+        <div class="item-name">${item.name} <span class="item-id">${displayId}</span></div>
+        <div class="item-meta">${item.description || 'Tanpa deskripsi'}</div>
+        <div class="item-price">${item.price > 0 ? `<span class="mini-coin"></span>${item.price.toLocaleString('en-US')}` : '<span class="item-free">GRATIS</span>'}</div>
+      `;
+      row.appendChild(info);
+
+      const actions = document.createElement('div');
+      actions.className = 'item-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'icon-btn edit'; editBtn.innerHTML = '✏️';
+      editBtn.addEventListener('click', () => openItemForm(category, item));
+      actions.appendChild(editBtn);
+
+      if (!(item.id === 'board_default' || item.id === 'piece_default')) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon-btn del'; delBtn.innerHTML = '🗑️';
+        delBtn.addEventListener('click', () => confirmDeleteItem(item));
+        actions.appendChild(delBtn);
+      }
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  /* =========================================================
+     ITEM FORM
+     ========================================================= */
+  let formMode = 'board';
+  let editingItem = null;
+  const itemModal = document.getElementById('itemModal');
+
+  function openItemForm(category, item = null) {
+    formMode = category;
+    editingItem = item;
+    document.getElementById('boardFields').style.display = category === 'board' ? 'block' : 'none';
+    document.getElementById('pieceFields').style.display = category === 'piece' ? 'block' : 'none';
+
+    if (item) {
+      document.getElementById('modalTitle').textContent = 'Edit ' + (category === 'board' ? 'Papan' : 'Bidak');
+      document.getElementById('modalSub').textContent = 'ID: ' + item.id;
+      document.getElementById('fId').value = item.id.replace(/^board_/, '').replace(/^piece_/, '');
+      document.getElementById('fId').disabled = true;
+      document.getElementById('fName').value = item.name;
+      document.getElementById('fDesc').value = item.description || '';
+      document.getElementById('fPrice').value = item.price;
+      if (category === 'board') {
+        setColorInput('fLight', item.light);
+        setColorInput('fDark', item.dark);
+        document.getElementById('fAccent').checked = !!item.accent;
+      } else {
+        setColorInput('fWhite', item.white);
+        setColorInput('fBlack', item.black);
+        setColorInput('fShadow', item.shadow);
+      }
+    } else {
+      document.getElementById('modalTitle').textContent = 'Tambah ' + (category === 'board' ? 'Papan' : 'Bidak');
+      document.getElementById('modalSub').textContent = 'Isi data item baru.';
+      document.getElementById('fId').value = '';
+      document.getElementById('fId').disabled = false;
+      document.getElementById('fName').value = '';
+      document.getElementById('fDesc').value = '';
+      document.getElementById('fPrice').value = 0;
+      if (category === 'board') {
+        setColorInput('fLight', '#e8d8b8');
+        setColorInput('fDark', '#8a6d4a');
+        document.getElementById('fAccent').checked = false;
+      } else {
+        setColorInput('fWhite', '#ffffff');
+        setColorInput('fBlack', '#111111');
+        setColorInput('fShadow', '#000000');
+      }
+    }
+    itemModal.classList.add('show');
+  }
+
+  document.getElementById('modalClose').addEventListener('click', () => itemModal.classList.remove('show'));
+  document.getElementById('cancelForm').addEventListener('click', () => itemModal.classList.remove('show'));
+
+  function setColorInput(prefix, value) {
+    document.getElementById(prefix + 'Color').value = value || '#000000';
+    document.getElementById(prefix + 'Text').value = value || '#000000';
+  }
+
+  function bindColor(prefix) {
+    const colorEl = document.getElementById(prefix + 'Color');
+    const textEl = document.getElementById(prefix + 'Text');
+    colorEl.addEventListener('input', () => { textEl.value = colorEl.value; });
+    textEl.addEventListener('input', () => {
+      let v = textEl.value.trim();
+      if (/^#?[0-9a-fA-F]{6}$/.test(v)) {
+        if (!v.startsWith('#')) v = '#' + v;
+        colorEl.value = v;
+      }
+    });
+  }
+  ['fLight', 'fDark', 'fWhite', 'fBlack', 'fShadow'].forEach(bindColor);
+
+  document.getElementById('itemForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('fId').value.trim().toLowerCase();
+    const name = document.getElementById('fName').value.trim();
+    const desc = document.getElementById('fDesc').value.trim();
+    const price = parseInt(document.getElementById('fPrice').value) || 0;
+    if (!id) return showToast('ID wajib diisi!', true);
+    if (!/^[a-z0-9_]+$/.test(id)) return showToast('ID hanya huruf kecil, angka, underscore!', true);
+    if (!name) return showToast('Nama wajib diisi!', true);
+
+    const payload = { id, category: formMode, name, description: desc, price };
+    if (formMode === 'board') {
+      payload.light = document.getElementById('fLightColor').value;
+      payload.dark = document.getElementById('fDarkColor').value;
+      payload.accent = document.getElementById('fAccent').checked;
+    } else {
+      payload.white = document.getElementById('fWhiteColor').value;
+      payload.black = document.getElementById('fBlackColor').value;
+      payload.shadow = document.getElementById('fShadowColor').value;
+    }
+
+    const saveBtn = document.getElementById('saveForm');
+    saveBtn.disabled = true; saveBtn.textContent = 'MENYIMPAN...';
+    try {
+      const endpoint = editingItem ? '/admin/shop/update' : '/admin/shop/add';
+      const res = await fetchAdminAPI(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
+      showToast(editingItem ? '✅ Item diupdate!' : '✅ Item ditambahkan!');
+      itemModal.classList.remove('show');
+      loadShop();
+    } catch (e) {
+      showToast('❌ ' + e.message, true);
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = 'SIMPAN';
+    }
+  });
+
+  /* =========================================================
+     DELETE ITEM
+     ========================================================= */
+  let deleteTargetItem = null;
+  function confirmDeleteItem(item) {
+    deleteTargetItem = item;
+    document.getElementById('confirmIcon').textContent = '🗑️';
+    document.getElementById('confirmTitle').textContent = 'Hapus item?';
+    document.getElementById('confirmText').innerHTML = `Item "<b>${item.name}</b>" akan dihapus dari shop.<br>User yang sudah beli tetap punya itemnya.`;
+    document.getElementById('okConfirm').textContent = 'HAPUS';
+    document.getElementById('confirmModal').classList.add('show');
+  }
+
+  document.getElementById('cancelConfirm').addEventListener('click', () => {
+    document.getElementById('confirmModal').classList.remove('show');
+    deleteTargetItem = null;
+  });
+
+  document.getElementById('okConfirm').addEventListener('click', async () => {
+    if (!deleteTargetItem) return;
+    try {
+      const res = await fetchAdminAPI('/admin/shop/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deleteTargetItem.id, category: deleteTargetItem.category })
+      });
+      if (!res.ok) throw new Error('Gagal hapus');
+      showToast('🗑️ Item dihapus!');
+      document.getElementById('confirmModal').classList.remove('show');
+      deleteTargetItem = null;
+      loadShop();
+    } catch (e) {
+      showToast('❌ ' + e.message, true);
+    }
+  });
+
+  /* =========================================================
+     RESET ALL
+     ========================================================= */
+  document.getElementById('resetAllBtn').addEventListener('click', () => {
+    document.getElementById('confirmIcon').textContent = '⚠️';
+    document.getElementById('confirmTitle').textContent = 'Hapus SEMUA Data?';
+    document.getElementById('confirmText').innerHTML = 'Semua user, koin, item, progress, misi, notifikasi, dan chat akan <b style="color:var(--red)">hilang permanen</b> dari database. Tidak bisa dibatalkan!';
+    document.getElementById('okConfirm').textContent = 'HAPUS SEMUA';
+    const okBtn = document.getElementById('okConfirm');
+    const newOkBtn = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+    newOkBtn.addEventListener('click', async () => {
+      newOkBtn.disabled = true; newOkBtn.textContent = 'MENGHAPUS...';
+      try {
+        const res = await fetchAdminAPI('/admin/reset-all', { method: 'POST' });
+        if (!res.ok) throw new Error('Gagal reset');
+        showToast('🗑️ Semua data dihapus dari DB!');
+        document.getElementById('confirmModal').classList.remove('show');
+        loadAllData();
+      } catch (e) {
+        showToast('❌ ' + e.message, true);
+      } finally {
+        newOkBtn.disabled = false; newOkBtn.textContent = 'HAPUS SEMUA';
+      }
+    });
+    document.getElementById('confirmModal').classList.add('show');
+  });
+
+  document.querySelectorAll('[data-add]').forEach(btn => {
+    btn.addEventListener('click', () => openItemForm(btn.dataset.add));
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    window.location.href = 'home.html';
+  });
+
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', isError);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+</script>
+
+</body>
+</html>
