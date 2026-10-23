@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chess - Game</title>
+<!-- AGORA SDK -->
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --gold: #ffd700;
+    --gold-dark: #b8860b;
+    --panel: rgba(20, 20, 40, 0.88);
+    --border: rgba(255, 215, 0, 0.25);
+    --light-sq: #e8d8b8;
+    --dark-sq: #8a6d4a;
+    --white-piece: #fff;
+    --black-piece: #111;
+    --piece-shadow: #000;
+    --green: #4dff88;
+    --red: #ff4d4d;
+    --cyan: #00e5ff;
+    --pink: #ff00aa;
+  }
+
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    font-family: 'Segoe UI', sans-serif;
+    background: #080812;
+    color: #fff;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    isolation: isolate;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, #1a1a30 0%, #080812 100%);
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.03) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.03) 75%);
+    background-size: 80px 80px;
+    background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
+    opacity: 0.6;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* ===== TOP BAR ===== */
+  .game-topbar {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    gap: 8px;
+    background: rgba(10, 10, 26, 0.85);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+  }
+
+  .top-left, .top-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .mode-badge {
+    display: flex; align-items: center; gap: 5px; padding: 7px 12px;
+    border-radius: 11px; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; flex-shrink: 0;
+  }
+  .mode-badge.classic { background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; }
+  .mode-badge.rank { background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); }
+  .mode-badge.byone { background: rgba(255,0,170,0.12); border: 1px solid rgba(255,0,170,0.3); color: #ff00aa; }
+
+  .ai-diff {
+    display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 800;
+    padding: 5px 10px; border-radius: 10px; letter-spacing: 0.5px; white-space: nowrap; flex-shrink: 0;
+  }
+  .ai-diff.easy { background: rgba(77,255,136,0.15); border: 1px solid rgba(77,255,136,0.4); color: #4dff88; }
+  .ai-diff.normal { background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.4); color: #ffd700; }
+  .ai-diff.hard { background: rgba(255,60,60,0.15); border: 1px solid rgba(255,60,60,0.4); color: #ff7a7a; }
+  .ai-diff.hardcore { background: rgba(255,0,170,0.15); border: 1px solid rgba(255,0,170,0.4); color: #ff00aa; }
+
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1); color: #b0b0d0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.2s; flex-shrink: 0;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,215,0,0.3); color: #fff; }
+  .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .exit-btn { background: rgba(255,60,60,0.12); border-color: rgba(255,60,60,0.3); color: #ff7a7a; }
+  .exit-btn:hover { background: rgba(255,60,60,0.25); border-color: var(--red); color: #fff; }
+
+  /* ===== PLAYER BAR (ATAS) ===== */
+  .player-bar {
+    position: relative; z-index: 15; display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; background: rgba(10,10,26,0.7); border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-shrink: 0; gap: 8px;
+  }
+
+  .player-info { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+  .player-info.right { justify-content: flex-end; text-align: right; }
+  .p-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8c00);
+    display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900;
+    color: #1a1a1a; flex-shrink: 0; position: relative;
+  }
+  .p-avatar.black { background: linear-gradient(135deg, #4a4a60, #1a1a2a); color: #fff; }
+  .p-avatar.active::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--gold); animation: activePulse 1.5s infinite;
+  }
+  @keyframes activePulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.15); opacity: 0.3; } }
+
+  .p-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-role { font-size: 9px; color: #8888aa; letter-spacing: 1px; margin-top: 1px; }
+  .rank-badge {
+    display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; color: var(--gold);
+    letter-spacing: 0.5px; flex-shrink: 0; padding: 4px 8px; background: rgba(255,215,0,0.1);
+    border: 1px solid rgba(255,215,0,0.25); border-radius: 8px;
+  }
+  .rank-stars { display: inline-flex; gap: 1px; font-size: 9px; color: var(--gold); }
+  .rank-stars .empty { opacity: 0.25; }
+
+  .turn-indicator {
+    font-size: 9px; font-weight: 800; letter-spacing: 1.2px; padding: 5px 9px; border-radius: 8px;
+    background: rgba(255,255,255,0.08); color: #8888aa; flex-shrink: 0; text-align: center; white-space: nowrap;
+  }
+  .turn-indicator.your-turn { background: rgba(255,215,0,0.15); color: var(--gold); animation: turnPulse 1.5s infinite; }
+  @keyframes turnPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); } 50% { box-shadow: 0 0 0 6px rgba(255,215,0,0); } }
+
+  /* ===== CHESS BOARD ===== */
+  .board-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; min-height: 0; position: relative; perspective: 1000px; }
+
+  .chess-board {
+    position: relative; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+    width: min(92vw, 92vh, 560px); height: min(92vw, 92vh, 560px); max-width: 100%; max-height: 100%;
+    aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 25px 70px rgba(0,0,0,0.9), 0 0 0 4px rgba(255,215,0,0.2), 0 0 50px rgba(255,215,0,0.1);
+    border: 2px solid #1a1a1a; user-select: none; touch-action: manipulation;
+    transform: rotateX(2deg); transition: transform 0.3s;
+  }
+
+  .sq { display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: all 0.15s; min-width: 0; min-height: 0; }
+  .sq:hover { filter: brightness(1.1); }
+  .sq .piece { font-size: clamp(20px, 5.5vw, 44px); line-height: 1; pointer-events: none; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 2; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4)); }
+  .sq.selected { box-shadow: inset 0 0 0 4px var(--gold), inset 0 0 25px rgba(255,215,0,0.6); z-index: 5; }
+  .sq.selected .piece { transform: scale(1.15); }
+  .sq.valid-move::after { content: ''; position: absolute; width: 35%; height: 35%; border-radius: 50%; background: rgba(77,255,136,0.7); box-shadow: 0 0 15px rgba(77,255,136,0.9); z-index: 1; pointer-events: none; animation: dotPulse 1s infinite; }
+  @keyframes dotPulse { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } }
+  .sq.valid-capture::after { width: 90%; height: 90%; background: transparent; border: 5px solid rgba(255,60,60,0.8); box-shadow: 0 0 20px rgba(255,60,60,0.7); }
+  .sq.last-move { box-shadow: inset 0 0 0 4px rgba(0,229,255,0.7); }
+  .sq.check { box-shadow: inset 0 0 0 4px var(--red), inset 0 0 30px rgba(255,60,60,0.7); animation: checkFlash 0.8s infinite; }
+  @keyframes checkFlash { 0%, 100% { box-shadow: inset 0 0 0 4px var(--red), inset 0 0 20px rgba(255,60,60,0.5); } 50% { box-shadow: inset 0 0 0 4px var(--red), inset 0 0 40px rgba(255,60,60,1); } }
+
+  .coord-file, .coord-rank { position: absolute; font-size: clamp(7px, 1.3vw, 11px); font-weight: 800; pointer-events: none; z-index: 3; opacity: 0.5; }
+  .coord-file { bottom: 2px; right: 4px; }
+  .coord-rank { top: 2px; left: 4px; }
+  .sq.light .coord-file, .sq.light .coord-rank { color: var(--dark-sq); }
+  .sq.dark .coord-file, .sq.dark .coord-rank { color: var(--light-sq); }
+
+  /* ===== BOTTOM CONTROLS ===== */
+  .game-controls {
+    position: relative; z-index: 20; display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 10px 14px 16px; background: rgba(10,10,26,0.9);
+    border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; flex-wrap: wrap;
+  }
+
+  .ctrl-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 16px;
+    border-radius: 14px; background: var(--panel); border: 1px solid var(--border); color: #fff;
+    cursor: pointer; transition: 0.2s; font-family: inherit; min-width: 70px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative;
+  }
+  .ctrl-btn:hover:not(:disabled) { border-color: var(--gold); background: rgba(255,215,0,0.1); transform: translateY(-3px); box-shadow: 0 6px 15px rgba(255,215,0,0.2); }
+  .ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .ctrl-btn .ico { font-size: 20px; }
+  .ctrl-btn .lbl { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: #b0b0d0; }
+  .ctrl-btn.danger { border-color: rgba(255,60,60,0.3); background: rgba(255,60,60,0.08); }
+  .ctrl-btn.danger:hover:not(:disabled) { border-color: var(--red); background: rgba(255,60,60,0.2); box-shadow: 0 6px 15px rgba(255,60,60,0.2); }
+
+  .ctrl-btn.mic-btn.on { border-color: var(--green); background: rgba(77,255,136,0.15); box-shadow: 0 0 15px rgba(77,255,136,0.3); }
+  .ctrl-btn.mic-btn.off { border-color: rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); }
+  .ctrl-btn.mic-btn.off .ico { filter: grayscale(1); opacity: 0.5; }
+  .ctrl-btn.mic-btn .pulse { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1s infinite; }
+  @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.7; } }
+
+  /* ===== MODAL ===== */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: linear-gradient(180deg, #1a1a30, #0f0f20); border: 1px solid var(--border); border-radius: 24px; padding: 24px; width: 100%; max-width: 420px; max-height: 88vh; overflow-y: auto; box-shadow: 0 25px 80px rgba(0,0,0,0.9), 0 0 50px rgba(255,215,0,0.1); animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; flex-shrink: 0; text-align: center; margin: auto; }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(30px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .modal-icon { font-size: 56px; margin-bottom: 12px; line-height: 1; }
+  .modal-title { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; }
+  .modal-title.gold { color: var(--gold); }
+  .modal-title.green { color: var(--green); }
+  .modal-title.red { color: var(--red); }
+  .modal-text { font-size: 13px; color: #b0b0d0; margin-bottom: 20px; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions button { flex: 1; padding: 14px; border-radius: 14px; border: none; font-weight: 900; font-size: 13px; letter-spacing: 1.2px; cursor: pointer; transition: 0.2s; font-family: inherit; }
+  .btn-cancel { background: rgba(255,255,255,0.08); color: #b0b0d0; }
+  .btn-cancel:hover { background: rgba(255,255,255,0.15); }
+  .btn-primary { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,215,0,0.5); }
+  .btn-danger { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
+  .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,60,60,0.5); }
+
+  .rank-display { background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.25); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+  .rank-name-big { font-size: 22px; font-weight: 900; color: var(--gold); letter-spacing: 2px; margin-bottom: 6px; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
+  .rank-sub { font-size: 10px; color: #8888aa; letter-spacing: 1.2px; margin-bottom: 10px; }
+  .rank-stars-big { font-size: 22px; color: var(--gold); letter-spacing: 4px; margin-bottom: 8px; text-shadow: 0 0 15px rgba(255,215,0,0.6); }
+  .rank-stars-big .empty { opacity: 0.2; }
+
+  .levelup-box { background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(255,0,170,0.12)); border: 1px solid rgba(0,229,255,0.4); border-radius: 14px; padding: 14px; margin-bottom: 14px; animation: levelupPop 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes levelupPop { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+  .levelup-label { font-size: 10px; color: var(--cyan); letter-spacing: 2px; font-weight: 800; margin-bottom: 4px; }
+  .levelup-num { font-size: 32px; font-weight: 900; background: linear-gradient(90deg, #00e5ff, #ff00aa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; letter-spacing: 2px; margin-bottom: 6px; }
+  .levelup-reward { font-size: 12px; color: var(--gold); font-weight: 800; letter-spacing: 0.5px; }
+
+  .invite-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+  .form-input { width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.35); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 12px; color: #fff; font-size: 13px; font-family: inherit; outline: none; transition: 0.2s; text-align: center; }
+  .form-input:focus { border-color: var(--gold); background: rgba(0,0,0,0.5); box-shadow: 0 0 0 3px rgba(255,215,0,0.12); }
+  .form-input::placeholder { color: #55557a; }
+
+  .invite-status { padding: 12px; border-radius: 12px; background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.25); color: #00e5ff; font-size: 12px; letter-spacing: 0.5px; margin-bottom: 14px; line-height: 1.5; }
+  .invite-status.success { background: rgba(77,255,136,0.08); border-color: rgba(77,255,136,0.3); color: var(--green); }
+
+  .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .reward-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
+  .reward-chip { display: flex; align-items: center; gap: 4px; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; color: var(--gold); }
+  .reward-chip.exp { background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.3); color: var(--cyan); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a1a; padding: 12px 24px;
+    border-radius: 30px; font-weight: 800; font-size: 13px; letter-spacing: 1px;
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.5); z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none;
+    max-width: calc(100vw - 40px); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: #fff; }
+
+  .promo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .promo-btn { aspect-ratio: 1; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12); color: #fff; font-size: 32px; cursor: pointer; transition: 0.2s; font-family: inherit; display: flex; align-items: center; justify-content: center; }
+  .promo-btn:hover { border-color: var(--gold); background: rgba(255,215,0,0.15); transform: scale(1.05); }
+
+  @media (max-width: 480px) {
+    .game-topbar { padding: 8px 10px; gap: 6px; }
+    .mode-badge { padding: 6px 9px; font-size: 9px; letter-spacing: 1px; }
+    .ai-diff { font-size: 8px; padding: 4px 8px; }
+    .icon-btn { width: 32px; height: 32px; font-size: 14px; }
+    .player-bar { padding: 6px 10px; }
+    .p-name { font-size: 11px; }
+    .turn-indicator { font-size: 8px; padding: 4px 7px; }
+    .game-controls { padding: 8px 10px 12px; gap: 6px; }
+    .ctrl-btn { padding: 6px 10px; min-width: 56px; }
+    .ctrl-btn .ico { font-size: 16px; }
+    .ctrl-btn .lbl { font-size: 7px; }
+    .rank-badge { font-size: 9px; padding: 3px 6px; }
+  }
+
+  @media (max-height: 640px) {
+    .player-bar { padding: 4px 10px; }
+    .p-avatar { width: 26px; height: 26px; font-size: 12px; }
+    .game-controls { padding: 6px 10px 10px; }
+    .ctrl-btn { padding: 5px 8px; }
+  }
+</style>
+</head>
+<body>
+
+  <audio id="sfxClick" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
+  <audio id="sfxCapture" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
+  <audio id="sfxWin" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" preload="auto"></audio>
+  <audio id="sfxLose" src="https://assets.mixkit.co/active_storage/sfx/2531/2531-preview.mp3" preload="auto"></audio>
+
+  <div class="game-topbar">
+    <div class="top-left">
+      <div class="mode-badge" id="modeBadge">
+        <span id="modeIcon">⚔️</span>
+        <span id="modeName">CLASSIC</span>
+      </div>
+      <div class="ai-diff easy" id="aiDiffBadge" style="display:none;">🟢 MUDAH</div>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" id="undoBtn" title="Undo">↶</button>
+      <button class="icon-btn exit-btn" id="exitBtn" title="Keluar">✕</button>
+    </div>
+  </div>
+
+  <div class="player-bar">
+    <!-- PLAYER MUSUH (B) -->
+    <div class="player-info">
+      <div class="p-avatar black" id="oppAvatar">♚</div>
+      <div>
+        <div class="p-name" id="oppName">Lawan</div>
+        <div class="p-role" id="oppRole">HITAM</div>
+      </div>
+      <div class="rank-badge" id="oppRankBadge" style="display:none;">
+        <span class="rank-stars" id="oppRankStars"></span>
+        <span id="oppRankName">-</span>
+      </div>
+    </div>
+
+    <!-- INDIKATOR GILIRAN -->
+    <div class="turn-indicator your-turn" id="turnInd">GILIRANMU</div>
+
+    <!-- PLAYER KAMU (A) -->
+    <div class="player-info right">
+      <div class="rank-badge" id="myRankBadge" style="display:none;">
+        <span id="myRankName">-</span>
+        <span class="rank-stars" id="myRankStars"></span>
+      </div>
+      <div style="text-align:right;">
+        <div class="p-name" id="myName">Kamu</div>
+        <div class="p-role" id="myRole">PUTIH • KAMU</div>
+      </div>
+      <div class="p-avatar" id="myAvatar">♔</div>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="chess-board" id="board"></div>
+  </div>
+
+  <div class="game-controls">
+    <button class="ctrl-btn mic-btn off" id="micBtn" title="Voice Chat">
+      <span class="ico">🎤</span>
+      <span class="lbl" id="micLbl">MIC OFF</span>
+    </button>
+    
+    <button class="ctrl-btn" id="flipBtn">
+      <span class="ico">🔄</span>
+      <span class="lbl">FLIP</span>
+    </button>
+    <button class="ctrl-btn" id="resignBtn">
+      <span class="ico">🏳️</span>
+      <span class="lbl">MENYERAH</span>
+    </button>
+    <button class="ctrl-btn" id="drawBtn">
+      <span class="ico">🤝</span>
+      <span class="lbl">DRAW</span>
+    </button>
+  </div>
+
+  <div class="modal-overlay" id="exitModal">
+    <div class="modal">
+      <div class="modal-icon">🚪</div>
+      <div class="modal-title">Keluar dari game?</div>
+      <div class="modal-text">Kamu bisa keluar kapan saja di mode Classic.<br>Game akan dianggap selesai.</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelExit">BATAL</button>
+        <button class="btn-danger" id="confirmExit">KELUAR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="rankExitModal">
+    <div class="modal">
+      <div class="modal-icon">🚫</div>
+      <div class="modal-title red">Tidak Bisa Keluar!</div>
+      <div class="modal-text">Di mode <b style="color:var(--gold)">RANK</b>, kamu harus menyelesaikan pertandingan.<br><br>Keluar akan dihitung kalah dan rank turun!</div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="okRankExit">MENGERTI</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="gameOverModal">
+    <div class="modal">
+      <div class="modal-icon" id="goIcon">🏆</div>
+      <div class="modal-title" id="goTitle">Selamat!</div>
+      <div class="modal-text" id="goText">Kamu menang!</div>
+
+      <div class="reward-row" id="goRewards" style="display:none;"></div>
+
+      <div class="levelup-box" id="goLevelUp" style="display:none;">
+        <div class="levelup-label">⭐ LEVEL UP!</div>
+        <div class="levelup-num" id="goLevelNum">2</div>
+        <div class="levelup-reward" id="goLevelReward">+100 Koin</div>
+      </div>
+
+      <div id="goRankChange" style="display:none;">
+        <div class="rank-display">
+          <div class="rank-name-big" id="goNewRank">-</div>
+          <div class="rank-sub" id="goRankChangeText">-</div>
+          <div class="rank-stars-big" id="goRankStars"></div>
+        </div>
+      </div>
+
+      <div id="goExpBox" style="margin-bottom:16px;display:none;">
+        <div style="font-size:10px;color:#8888aa;letter-spacing:1.5px;margin-bottom:6px;font-weight:700;">PROGRESS EXP</div>
+        <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;">
+          <div id="goExpFill" style="height:100%;width:0%;background:linear-gradient(90deg,#00e5ff,#ff00aa);border-radius:10px;box-shadow:0 0 10px rgba(0,229,255,0.6);transition:width 0.6s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#8888aa;margin-top:4px;letter-spacing:0.5px;font-weight:600;">
+          <span>EXP: <b style="color:var(--cyan)" id="goExpText">0/10</b></span>
+          <span id="goNextLevelText">Lv. 2</span>
+        </div>
+      </div>
+
+      <div class="modal-actions" id="goActions">
+        <button class="btn-primary" id="goHome">KE HOME</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="promoModal">
+    <div class="modal">
+      <div class="modal-icon">👑</div>
+      <div class="modal-title gold">Promosi Bidak!</div>
+      <div class="modal-text">Pilih bidak pengganti pion:</div>
+      <div class="promo-grid" id="promoGrid"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="resignModal">
+    <div class="modal">
+      <div class="modal-icon">🏳️</div>
+      <div class="modal-title red">Menyerah?</div>
+      <div class="modal-text" id="resignText">Kamu akan dihitung kalah.</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelResign">BATAL</button>
+        <button class="btn-danger" id="confirmResign">MENYERAH</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="drawModal">
+    <div class="modal">
+      <div class="modal-icon">🤝</div>
+      <div class="modal-title">Tawarkan Draw?</div>
+      <div class="modal-text">Lawan akan menerima tawaran seri. Kalau setuju, game berakhir seri.</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelDraw">BATAL</button>
+        <button class="btn-primary" id="confirmDraw">TAWARKAN</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay show" id="setupModal">
+    <div class="modal">
+      <div class="modal-icon">🎮</div>
+      <div class="modal-title gold">MULAI GAME</div>
+      <div class="modal-text">Pilih mode permainan</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn-primary" id="chooseClassic" style="padding:14px;">
+          ⚔️ CLASSIC<br><span style="font-size:10px;font-weight:600;opacity:0.7;">Bisa keluar & undo</span>
+        </button>
+        <button class="btn-primary" id="chooseRank" style="padding:14px;background:linear-gradient(135deg,#ffd700,#b8860b);">
+          🏆 RANK<br><span style="font-size:10px;font-weight:600;opacity:0.7;">Ranked match • no undo • no exit</span>
+        </button>
+        <button class="btn-primary" id="chooseByOne" style="padding:14px;background:linear-gradient(135deg,#ff00aa,#aa0088);">
+          👥 BY ONE<br><span style="font-size:10px;font-weight:600;opacity:0.7;">Kembali ke Home untuk Tantang Teman</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="inviteModal">
+    <div class="modal">
+      <div class="modal-icon">✉️</div>
+      <div class="modal-title">Undang Teman</div>
+      <div class="modal-text">Masukkan username teman yang mau kamu tantang.</div>
+      <div class="invite-form">
+        <input type="text" class="form-input" id="friendInput" placeholder="Username teman..." maxlength="16">
+        <button class="btn-primary" id="sendInvite" style="padding:12px;border-radius:12px;border:none;font-weight:800;font-size:12px;letter-spacing:1.5px;cursor:pointer;font-family:inherit;">
+          📨 KIRIM UNDANGAN
+        </button>
+      </div>
+      <div class="invite-status" id="inviteStatus" style="display:none;"></div>
+      <div class="modal-actions" id="inviteActions">
+        <button class="btn-cancel" id="cancelInvite">KEMBALI</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="waitingModal">
+    <div class="modal">
+      <div class="modal-icon"><span class="spinner"></span></div>
+      <div class="modal-title">Menunggu...</div>
+      <div class="modal-text" id="waitingText">Menunggu teman menerima undanganmu...</div>
+      <div id="waitingStatus" style="font-size:11px;color:#8888aa;margin-bottom:16px;"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelWaiting">BATALKAN</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  /* =========================================================
+     KONFIGURASI API & STATE
+     ========================================================= */
+  const API_URL = "https://catur-destro.dedisurakhman234.workers.dev/api";
+  const CURRENT_USER = sessionStorage.getItem('chessUser') || (localStorage.getItem('chessOfflineMode') === 'true' ? 'Tamu' : null);
+  const IS_OFFLINE = localStorage.getItem('chessOfflineMode') === 'true';
+
+  let AGORA_APP_ID = "9b16af4fe1ee4337901855ac614bb74a"; 
+  let AGORA_TOKEN = "";
+  
+  let agoraClient = null;
+  let localAudioTrack = null;
+  let isMicOn = false;
+  let isJoiningVoice = false;
+
+  if (!CURRENT_USER) window.location.href = 'login.html';
+
+  const sfxClick = document.getElementById('sfxClick');
+  const sfxCapture = document.getElementById('sfxCapture');
+  const sfxWin = document.getElementById('sfxWin');
+  const sfxLose = document.getElementById('sfxLose');
+
+  function playSound(audio) {
+    if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+  }
+
+  async function fetchAPI(endpoint, options = {}) {
+    return await fetch(`${API_URL}${endpoint}`, options);
+  }
+
+  // STATE GLOBAL
+  let userData = null;
+  let shopItems = { boards: [], pieces: [] };
+  let equipped = { board: 'default', pieces: 'default' };
+  let myName = CURRENT_USER || 'Tamu';
+  let isMultiplayer = false;
+  let currentRoomCode = null;
+  let pollInterval = null;
+
+  const DEFAULT_SHOP_ITEMS = {
+    boards: [{ id: 'default', name: 'Klasik', light: '#e8d8b8', dark: '#8a6d4a', accent: false }],
+    pieces: [{ id: 'default', name: 'Klasik', white: '#fff', black: '#111', shadow: '#000' }]
+  };
+
+  /* =========================================================
+     RANK SYSTEM & UTILS
+     ========================================================= */
+  const RANK_NAMES = ['Bronze','Silver','Gold','Platinum','Diamond','Master','Grandmaster','Elite','Legend','Mythic','Immortal'];
+  const MAX_STARS = RANK_NAMES.length * 4;
+
+  function toRoman(n) { const r = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI']; return r[n - 1] || n; }
+  function starsToRank(totalStars) {
+    totalStars = Math.max(0, Math.min(MAX_STARS, totalStars));
+    if (totalStars === 0) return { rankIdx: 0, rankName: RANK_NAMES[0], stars: 0, totalStars: 0 };
+    const rankIdx = Math.floor((totalStars - 1) / 4);
+    const starsInRank = ((totalStars - 1) % 4) + 1;
+    return { rankIdx, rankName: RANK_NAMES[rankIdx], stars: starsInRank, totalStars };
+  }
+  function renderRankBadge(rank, starsEl, nameEl) {
+    if (nameEl) nameEl.textContent = rank.rankName + ' ' + toRoman(rank.rankIdx + 1);
+    if (starsEl) {
+      starsEl.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        const s = document.createElement('span');
+        s.textContent = '★';
+        if (i >= rank.stars) s.className = 'empty';
+        starsEl.appendChild(s);
+      }
+    }
+  }
+
+  async function fetchUserData() {
+    if (IS_OFFLINE) {
+      shopItems = DEFAULT_SHOP_ITEMS;
+    } else {
+      try {
+        const resShop = await fetchAPI('/shop/items');
+        if (resShop.ok) {
+          const dataShop = await resShop.json();
+          if (dataShop.boards && dataShop.boards.length > 0) shopItems = dataShop;
+          else shopItems = DEFAULT_SHOP_ITEMS;
+        } else { shopItems = DEFAULT_SHOP_ITEMS; }
+      } catch (e) { shopItems = DEFAULT_SHOP_ITEMS; }
+    }
+
+    const equipKey = IS_OFFLINE ? 'chessEquipped_Tamu' : 'chessEquipped';
+    equipped = JSON.parse(localStorage.getItem(equipKey) || '{"board":"default","pieces":"default"}');
+
+    if (IS_OFFLINE) {
+      const prof = JSON.parse(localStorage.getItem('chessProfile_Tamu') || '{"level":1,"exp":0,"expToNext":10}');
+      const rnk = JSON.parse(localStorage.getItem('chessRank_Tamu') || '{"totalStars":0}');
+      userData = { username: 'Tamu', coins: 100, level: prof.level, exp: prof.exp, exp_to_next: prof.expToNext, rank_stars: rnk.totalStars };
+    } else {
+      try {
+        const res = await fetchAPI(`/user?username=${CURRENT_USER}`);
+        if (res.ok) userData = await res.json();
+      } catch (e) { console.warn('Gagal ambil user:', e); }
+    }
+
+    const boardSkin = shopItems.boards.find(b => b.id === equipped.board) || shopItems.boards[0] || DEFAULT_SHOP_ITEMS.boards[0];
+    const pieceSkin = shopItems.pieces.find(p => p.id === equipped.pieces) || shopItems.pieces[0] || DEFAULT_SHOP_ITEMS.pieces[0];
+    
+    document.documentElement.style.setProperty('--light-sq', boardSkin.light);
+    document.documentElement.style.setProperty('--dark-sq', boardSkin.dark);
+    document.documentElement.style.setProperty('--white-piece', pieceSkin.white);
+    document.documentElement.style.setProperty('--black-piece', pieceSkin.black);
+    document.documentElement.style.setProperty('--piece-shadow', pieceSkin.shadow);
+
+    updateRankBadges();
+  }
+
+  function getAIDifficulty() {
+    const lvl = (userData && userData.level) ? userData.level : 1;
+    if (lvl <= 2) return { tier: 'easy', label: '🟢 MUDAH', depth: 0 };
+    if (lvl <= 5) return { tier: 'normal', label: '🟡 NORMAL', depth: 0 };
+    if (lvl <= 10) return { tier: 'hard', label: '🔴 SULIT', depth: 2 };
+    return { tier: 'hardcore', label: '💀 HARDCODE', depth: 2 };
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlMode = urlParams.get('mode');
+  const urlRoom = urlParams.get('room');
+
+  let mode = null;
+  let board = [];
+  let turn = 'w';
+  let selected = null;
+  let validMoves = [];
+  let history = [];
+  let lastMove = null;
+  let flipped = false;
+  let gameOver = false;
+  let pendingPromotion = null;
+  let opponentName = 'Lawan';
+  let myColor = 'w';
+  let aiThinking = false;
+
+  const PIECES = {
+    wK: '♔', wQ: '♕', wR: '♖', wB: '♗', wN: '♘', wP: '♙',
+    bK: '♚', bQ: '♛', bR: '♜', bB: '♝', bN: '♞', bP: '♟'
+  };
+
+  function pieceChar(code) { return PIECES[code] || ''; }
+
+  function initBoard() {
+    board = [
+      ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+      ['bP','bP','bP','bP','bP','bP','bP','bP'],
+      [null,null,null,null,null,null,null,null],
+      [null,null,null,null,null,null,null,null],
+      [null,null,null,null,null,null,null,null],
+      [null,null,null,null,null,null,null,null],
+      ['wP','wP','wP','wP','wP','wP','wP','wP'],
+      ['wR','wN','wB','wQ','wK','wB','wN','wR']
+    ];
+  }
+
+  function cloneBoard(b) { return b.map(row => [...row]); }
+
+  function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+  function genMoves(r, c, checkKing = true) {
+    const p = board[r][c];
+    if (!p) return [];
+    const color = p[0];
+    const type = p[1];
+    const moves = [];
+
+    const add = (nr, nc) => {
+      if (!inBounds(nr, nc)) return false;
+      const target = board[nr][nc];
+      if (target && target[0] === color) return false;
+      moves.push({ r: nr, c: nc, capture: !!target });
+      return !target;
+    };
+
+    const addSlide = (dr, dc) => {
+      let nr = r + dr, nc = c + dc;
+      while (inBounds(nr, nc)) {
+        const target = board[nr][nc];
+        if (target && target[0] === color) break;
+        moves.push({ r: nr, c: nc, capture: !!target });
+        if (target) break;
+        nr += dr; nc += dc;
+      }
+    };
+
+    if (type === 'P') {
+      const dir = color === 'w' ? -1 : 1;
+      const startRow = color === 'w' ? 6 : 1;
+      const nr = r + dir;
+      if (inBounds(nr, c) && !board[nr][c]) {
+        moves.push({ r: nr, c: c, capture: false });
+        if (r === startRow && !board[r + 2*dir][c]) {
+          moves.push({ r: r + 2*dir, c: c, capture: false });
+        }
+      }
+      for (const dc of [-1, 1]) {
+        const nc = c + dc;
+        if (inBounds(nr, nc) && board[nr][nc] && board[nr][nc][0] !== color) {
+          moves.push({ r: nr, c: nc, capture: true });
+        }
+      }
+    } else if (type === 'N') {
+      const offsets = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+      for (const [dr, dc] of offsets) { add(r + dr, c + dc); }
+    } else if (type === 'B') {
+      addSlide(-1,-1); addSlide(-1,1); addSlide(1,-1); addSlide(1,1);
+    } else if (type === 'R') {
+      addSlide(-1,0); addSlide(1,0); addSlide(0,-1); addSlide(0,1);
+    } else if (type === 'Q') {
+      addSlide(-1,-1); addSlide(-1,1); addSlide(1,-1); addSlide(1,1);
+      addSlide(-1,0); addSlide(1,0); addSlide(0,-1); addSlide(0,1);
+    } else if (type === 'K') {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          add(r + dr, c + dc);
+        }
+      }
+    }
+
+    if (checkKing) return moves.filter(m => !leavesKingInCheck(r, c, m.r, m.c, color));
+    return moves;
+  }
+
+  function findKing(color) {
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (board[r][c] === color + 'K') return { r, c };
+    return null;
+  }
+
+  function isSquareAttacked(r, c, byColor) {
+    for (let rr = 0; rr < 8; rr++) {
+      for (let cc = 0; cc < 8; cc++) {
+        const p = board[rr][cc];
+        if (!p || p[0] !== byColor) continue;
+        const moves = genMoves(rr, cc, false);
+        if (moves.some(m => m.r === r && m.c === c)) return true;
+      }
+    }
+    return false;
+  }
+
+  function isInCheck(color) {
+    const king = findKing(color);
+    if (!king) return false;
+    return isSquareAttacked(king.r, king.c, color === 'w' ? 'b' : 'w');
+  }
+
+  function leavesKingInCheck(fromR, fromC, toR, toC, color) {
+    const captured = board[toR][toC];
+    const moving = board[fromR][fromC];
+    board[toR][toC] = moving;
+    board[fromR][fromC] = null;
+    const check = isInCheck(color);
+    board[fromR][fromC] = moving;
+    board[toR][toC] = captured;
+    return check;
+  }
+
+  function getAllLegalMoves(color) {
+    const all = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = board[r][c];
+        if (p && p[0] === color) {
+          const moves = genMoves(r, c);
+          for (const m of moves) all.push({ from: {r, c}, to: {r: m.r, c: m.c} });
+        }
+      }
+    }
+    return all;
+  }
+
+  function isCheckmate(color) { return isInCheck(color) && getAllLegalMoves(color).length === 0; }
+  function isStalemate(color) { return !isInCheck(color) && getAllLegalMoves(color).length === 0; }
+
+  const boardEl = document.getElementById('board');
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    const files = ['a','b','c','d','e','f','g','h'];
+    const ranks = ['8','7','6','5','4','3','2','1'];
+    const pieceSkin = shopItems.pieces.find(p => p.id === equipped.pieces) || shopItems.pieces[0] || DEFAULT_SHOP_ITEMS.pieces[0];
+
+    for (let dr = 0; dr < 8; dr++) {
+      for (let dc = 0; dc < 8; dc++) {
+        const r = flipped ? 7 - dr : dr;
+        const c = flipped ? 7 - dc : dc;
+
+        const sq = document.createElement('div');
+        sq.className = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+        sq.dataset.r = r;
+        sq.dataset.c = c;
+        
+        // Pake CSS variable biar warnanya ngikutin setingan user
+        sq.style.background = ((r + c) % 2 === 0) ? 'var(--light-sq)' : 'var(--dark-sq)';
+
+        if (selected && selected.r === r && selected.c === c) sq.classList.add('selected');
+        if (lastMove) {
+          if ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c)) sq.classList.add('last-move');
+        }
+        if (validMoves.some(m => m.r === r && m.c === c)) {
+          const target = board[r][c];
+          sq.classList.add(target ? 'valid-capture' : 'valid-move');
+        }
+        if (isInCheck(turn)) {
+          const k = findKing(turn);
+          if (k && k.r === r && k.c === c) sq.classList.add('check');
+        }
+
+        const p = board[r][c];
+        if (p) {
+          const piece = document.createElement('span');
+          piece.className = 'piece';
+          piece.textContent = pieceChar(p);
+          piece.style.color = p[0] === 'w' ? 'var(--white-piece)' : 'var(--black-piece)';
+          piece.style.textShadow = '0 1px 2px var(--piece-shadow), 0 0 6px var(--piece-shadow)';
+          sq.appendChild(piece);
+        }
+
+        if (dr === 7) {
+          const f = document.createElement('span'); f.className = 'coord-file'; f.textContent = files[c]; sq.appendChild(f);
+        }
+        if (dc === 0) {
+          const rk = document.createElement('span'); rk.className = 'coord-rank'; rk.textContent = ranks[r]; sq.appendChild(rk);
+        }
+
+        sq.addEventListener('click', () => onSquareClick(r, c));
+        boardEl.appendChild(sq);
+      }
+    }
+    updateTurnIndicator();
+  }
+
+  function updateTurnIndicator() {
+    const ind = document.getElementById('turnInd');
+    if (gameOver) { ind.textContent = 'SELESAI'; ind.classList.remove('your-turn'); return; }
+    const isMyTurn = turn === myColor && !aiThinking;
+    ind.textContent = isMyTurn ? 'GILIRANMU' : 'GILIRAN LAWAN';
+    ind.classList.toggle('your-turn', isMyTurn);
+  }
+
+  function onSquareClick(r, c) {
+    if (gameOver || aiThinking) return;
+    if (turn !== myColor) return; // Kunci ketat: gak bisa gerak kalo bukan giliran lu
+
+    const p = board[r][c];
+    if (p && p[0] === myColor) {
+      selected = { r, c };
+      validMoves = genMoves(r, c);
+      playSound(sfxClick);
+      renderBoard();
+      return;
+    }
+
+    if (selected) {
+      const move = validMoves.find(m => m.r === r && m.c === c);
+      if (move) { makeMove(selected.r, selected.c, r, c); return; }
+      selected = null; validMoves = []; renderBoard();
+    }
+  }
+
+  function saveHistory() {
+    history.push({ board: cloneBoard(board), turn, lastMove: lastMove ? JSON.parse(JSON.stringify(lastMove)) : null });
+    if (history.length > 50) history.shift();
+  }
+
+  function makeMove(fromR, fromC, toR, toC, promotion = null) {
+    saveHistory();
+    const piece = board[fromR][fromC];
+    const target = board[toR][toC];
+
+    if (target) playSound(sfxCapture); else playSound(sfxClick);
+
+    if (piece && piece[1] === 'P' && (toR === 0 || toR === 7) && !promotion) {
+      pendingPromotion = { r: toR, c: toC, color: piece[0], fromR, fromC };
+      showPromotion();
+      return;
+    }
+
+    board[toR][toC] = promotion ? (piece[0] + promotion) : piece;
+    board[fromR][fromC] = null;
+    lastMove = { from: { r: fromR, c: fromC }, to: { r: toR, c: toC } };
+    selected = null; validMoves = [];
+    turn = turn === 'w' ? 'b' : 'w';
+    renderBoard();
+    
+    if (isMultiplayer) {
+      let gameStatus = 'playing';
+      let winner = null;
+      if (isCheckmate(turn)) { gameStatus = 'finished'; winner = myColor; }
+      else if (isStalemate(turn)) { gameStatus = 'finished'; winner = 'draw'; }
+
+      fetchAPI('/game/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomCode: currentRoomCode, boardState: board, turn: turn, status: gameStatus, winner: winner })
+      }).catch(e => console.warn('Gagal kirim move:', e));
+    }
+
+    checkGameState();
+  }
+
+  function showPromotion() {
+    const grid = document.getElementById('promoGrid');
+    grid.innerHTML = '';
+    const color = pendingPromotion.color;
+    const pieceSkin = shopItems.pieces.find(p => p.id === equipped.pieces) || shopItems.pieces[0] || DEFAULT_SHOP_ITEMS.pieces[0];
+    
+    ['Q', 'R', 'B', 'N'].forEach(type => {
+      const btn = document.createElement('button');
+      btn.className = 'promo-btn';
+      btn.textContent = pieceChar(color + type);
+      btn.style.color = color === 'w' ? pieceSkin.white : pieceSkin.black;
+      btn.addEventListener('click', () => {
+        document.getElementById('promoModal').classList.remove('show');
+        const pp = pendingPromotion;
+        pendingPromotion = null;
+        saveHistory();
+        board[pp.r][pp.c] = pp.color + type;
+        board[pp.fromR][pp.fromC] = null;
+        lastMove = { from: { r: pp.fromR, c: pp.fromC }, to: { r: pp.r, c: pp.c } };
+        selected = null; validMoves = [];
+        turn = turn === 'w' ? 'b' : 'w';
+        renderBoard();
+        
+        if (isMultiplayer) {
+          fetchAPI('/game/move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomCode: currentRoomCode, boardState: board, turn: turn, status: 'playing' })
+          }).catch(e => {});
+        }
+        checkGameState();
+      });
+      grid.appendChild(btn);
+    });
+    document.getElementById('promoModal').classList.add('show');
+  }
+
+  function checkGameState() {
+    if (isCheckmate(turn)) {
+      gameOver = true;
+      const winner = turn === 'w' ? 'black' : 'white';
+      endGame(winner, 'checkmate');
+      return;
+    }
+    if (isStalemate(turn)) {
+      gameOver = true;
+      endGame('draw', 'stalemate');
+      return;
+    }
+
+    if (!isMultiplayer && turn !== myColor && !gameOver) {
+      aiThinking = true;
+      updateTurnIndicator();
+      setTimeout(() => {
+        aiMove();
+        aiThinking = false;
+        updateTurnIndicator();
+      }, 500);
+    }
+  }
+
+  const PIECE_VALUE = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
+
+  function evaluateBoard() {
+    let score = 0;
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (!p) continue;
+      const val = PIECE_VALUE[p[1]] || 0;
+      score += p[0] === 'b' ? val : -val;
+    }
+    return score;
+  }
+
+  function minimax(depth, isMax, alpha = -Infinity, beta = Infinity) {
+    if (depth === 0) return evaluateBoard();
+    const color = isMax ? 'b' : 'w';
+    const moves = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (p && p[0] === color) {
+        const gm = genMoves(r, c);
+        for (const m of gm) moves.push({ from: {r,c}, to: {r: m.r, c: m.c} });
+      }
+    }
+    if (moves.length === 0) return isMax ? -100 : 100;
+
+    if (isMax) {
+      let best = -Infinity;
+      for (const m of moves) {
+        const captured = board[m.to.r][m.to.c];
+        const moving = board[m.from.r][m.from.c];
+        board[m.to.r][m.to.c] = moving; board[m.from.r][m.from.c] = null;
+        const val = minimax(depth - 1, false, alpha, beta);
+        board[m.from.r][m.from.c] = moving; board[m.to.r][m.to.c] = captured;
+        best = Math.max(best, val); alpha = Math.max(alpha, val);
+        if (beta <= alpha) break;
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for (const m of moves) {
+        const captured = board[m.to.r][m.to.c];
+        const moving = board[m.from.r][m.from.c];
+        board[m.to.r][m.to.c] = moving; board[m.from.r][m.from.c] = null;
+        const val = minimax(depth - 1, true, alpha, beta);
+        board[m.from.r][m.from.c] = moving; board[m.to.r][m.to.c] = captured;
+        best = Math.min(best, val); beta = Math.min(beta, val);
+        if (beta <= alpha) break;
+      }
+      return best;
+    }
+  }
+
+  function aiMove() {
+    if (gameOver || isMultiplayer) return;
+    const moves = getAllLegalMoves(turn);
+    if (moves.length === 0) return;
+    const diff = getAIDifficulty();
+    let chosenMove;
+
+    if (diff.tier === 'easy') {
+      chosenMove = moves[Math.floor(Math.random() * moves.length)];
+    } else if (diff.tier === 'normal') {
+      const captures = moves.filter(m => board[m.to.r][m.to.c]);
+      chosenMove = captures.length > 0 ? captures[Math.floor(Math.random() * captures.length)] : moves[Math.floor(Math.random() * moves.length)];
+    } else {
+      const depth = diff.depth;
+      let bestVal = -Infinity;
+      moves.sort(() => Math.random() - 0.5);
+      for (const m of moves) {
+        const captured = board[m.to.r][m.to.c];
+        const moving = board[m.from.r][m.from.c];
+        board[m.to.r][m.to.c] = moving; board[m.from.r][m.from.c] = null;
+        const val = minimax(depth - 1, false);
+        board[m.from.r][m.from.c] = moving; board[m.to.r][m.to.c] = captured;
+        if (val > bestVal) { bestVal = val; chosenMove = m; }
+      }
+    }
+    if (chosenMove) makeMove(chosenMove.from.r, chosenMove.from.c, chosenMove.to.r, chosenMove.to.c);
+  }
+
+  /* =========================================================
+     FITUR VOICE CHAT (AGORA)
+     ========================================================= */
+  async function initAgora(channelName) {
+    await leaveAgora();
+
+    if (!AGORA_APP_ID || AGORA_APP_ID === "ISI_APP_ID_AGORA") {
+        showToast('⚠️ App ID Agora belum diisi', 'error');
+        return;
+    }
+
+    if (!AGORA_TOKEN) {
+        showToast('⚠️ Token Agora kosong. Minta admin isi di Dashboard.', 'error');
+        return;
+    }
+
+    isJoiningVoice = true;
+    updateMicBtnUI();
+
+    try {
+        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        
+        agoraClient.on("user-published", async (user, mediaType) => {
+            await agoraClient.subscribe(user, mediaType);
+            if (mediaType === "audio") {
+                user.audioTrack.play();
+                showToast('🔊 ' + user.uid + ' masuk voice', 'success');
+            }
+        });
+
+        // FIX: UID harus angka, kita pake timestamp biar unik
+        const uid = Math.floor(Math.random() * 100000) + 1; 
+        
+        await agoraClient.join(AGORA_APP_ID, channelName, AGORA_TOKEN, uid);
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({ encoderConfig: "music_standard" });
+        await agoraClient.publish([localAudioTrack]);
+        
+        isMicOn = true;
+        showToast('🎙️ Voice Channel tersambung!', 'success');
+
+    } catch (error) {
+        console.error("Agora Error:", error);
+        showToast('❌ Gagal nyambung mic: ' + error.message, 'error');
+        isMicOn = false;
+    } finally {
+        isJoiningVoice = false;
+        updateMicBtnUI();
+    }
+  }
+
+  async function leaveAgora() {
+    if (localAudioTrack) {
+        localAudioTrack.stop();
+        localAudioTrack.close();
+        localAudioTrack = null;
+    }
+    if (agoraClient) {
+        await agoraClient.leave();
+        agoraClient = null;
+    }
+    isMicOn = false;
+    updateMicBtnUI();
+  }
+
+  async function toggleMic() {
+    if (!agoraClient || !localAudioTrack) return;
+    
+    isMicOn = !isMicOn;
+    if (isMicOn) {
+        await localAudioTrack.setEnabled(true);
+        showToast('🎤 Mic Aktif', 'success');
+    } else {
+        await localAudioTrack.setEnabled(false);
+        showToast('🔇 Mic Mute', '');
+    }
+    updateMicBtnUI();
+  }
+
+  function updateMicBtnUI() {
+    const btn = document.getElementById('micBtn');
+    const lbl = document.getElementById('micLbl');
+    
+    if (isJoiningVoice) {
+        btn.className = 'ctrl-btn mic-btn';
+        lbl.textContent = 'MENGHUBUNGKAN...';
+        return;
+    }
+    
+    if (isMicOn) {
+        btn.className = 'ctrl-btn mic-btn on';
+        lbl.textContent = 'MIC ON';
+        if (!btn.querySelector('.pulse')) {
+            const p = document.createElement('div');
+            p.className = 'pulse';
+            btn.appendChild(p);
+        }
+    } else {
+        btn.className = 'ctrl-btn mic-btn off';
+        lbl.textContent = 'MIC OFF';
+        const p = btn.querySelector('.pulse');
+        if (p) p.remove();
+    }
+  }
+
+  document.getElementById('micBtn').addEventListener('click', () => {
+      if (!agoraClient) {
+          if (mode === 'byone' || isMultiplayer) {
+              initAgora(currentRoomCode || 'tes_voice');
+          } else {
+              showToast('❌ Voice Chat cuma buat mode By One', 'error');
+          }
+      } else {
+          toggleMic();
+      }
+  });
+
+  /* =========================================================
+     END GAME
+     ========================================================= */
+  async function endGame(result, reason) {
+    gameOver = true;
+    selected = null;
+    validMoves = [];
+    renderBoard();
+    
+    if (pollInterval) clearInterval(pollInterval);
+    leaveAgora();
+
+    const modal = document.getElementById('gameOverModal');
+    const icon = document.getElementById('goIcon');
+    const title = document.getElementById('goTitle');
+    const text = document.getElementById('goText');
+    const rankChange = document.getElementById('goRankChange');
+    const levelUpBox = document.getElementById('goLevelUp');
+    const expBox = document.getElementById('goExpBox');
+    const rewardsBox = document.getElementById('goRewards');
+
+    let myResult = result;
+    if (result === 'white') myResult = myColor === 'w' ? 'win' : 'lose';
+    else if (result === 'black') myResult = myColor === 'b' ? 'win' : 'lose';
+    else myResult = 'draw';
+
+    if (myResult === 'win') playSound(sfxWin); else playSound(sfxLose);
+
+    if (myResult === 'win') {
+      icon.textContent = '🏆'; title.textContent = 'Kamu Menang!'; title.className = 'modal-title green';
+      text.textContent = reason === 'checkmate' ? 'Checkmate! Kamu mengalahkan lawan.' : (reason === 'resign' ? 'Lawan menyerah.' : 'Lawan kehabisan waktu.');
+    } else if (myResult === 'lose') {
+      icon.textContent = '💔'; title.textContent = 'Kamu Kalah'; title.className = 'modal-title red';
+      text.textContent = 'Jangan menyerah! Coba lagi.';
+    } else {
+      icon.textContent = '🤝'; title.textContent = 'Seri!'; title.className = 'modal-title';
+      text.textContent = 'Pertandingan berakhir imbang.';
+    }
+    modal.classList.add('show');
+
+    if (IS_OFFLINE) {
+      let coins = parseInt(localStorage.getItem('chessCoins_Tamu') || '100');
+      let prof = JSON.parse(localStorage.getItem('chessProfile_Tamu') || '{"level":1,"exp":0,"expToNext":10}');
+      let rnk = JSON.parse(localStorage.getItem('chessRank_Tamu') || '{"totalStars":0}');
+      let st = JSON.parse(localStorage.getItem('chessStats_Tamu') || '{"wins":0,"losses":0,"draws":0}');
+
+      let expGain = myResult === 'win' ? 10 : (myResult === 'draw' ? 5 : 2);
+      let baseCoin = myResult === 'win' ? (mode === 'rank' ? 200 : 100) : (myResult === 'draw' ? 30 : 0);
+
+      let oldLevel = prof.level;
+      prof.exp += expGain;
+      let leveledUp = false, levelBonus = 0;
+      while (prof.exp >= prof.expToNext) {
+        prof.exp -= prof.expToNext; prof.level++; prof.expToNext = prof.level * 10; leveledUp = true;
+      }
+      if (leveledUp) levelBonus = 50 * prof.level;
+      
+      let totalCoin = baseCoin + levelBonus;
+      coins += totalCoin;
+      
+      let rankDelta = 0;
+      if (mode === 'rank') rankDelta = myResult === 'win' ? 1 : (myResult === 'lose' ? -1 : 0);
+      rnk.totalStars = Math.max(0, Math.min(MAX_STARS, rnk.totalStars + rankDelta));
+
+      if (myResult === 'win') st.wins++; else if (myResult === 'lose') st.losses++; else st.draws++;
+
+      localStorage.setItem('chessCoins_Tamu', coins);
+      localStorage.setItem('chessProfile_Tamu', JSON.stringify(prof));
+      localStorage.setItem('chessRank_Tamu', JSON.stringify(rnk));
+      localStorage.setItem('chessStats_Tamu', JSON.stringify(st));
+
+      renderGameOverUI(myResult, expGain, baseCoin, totalCoin, leveledUp, levelBonus, prof, rnk, rankDelta, mode);
+      return;
+    }
+
+    if (isMultiplayer) {
+      renderGameOverUI(myResult, 0, 0, 0, false, 0, userData, { totalStars: userData.rank_stars }, 0, mode);
+      return;
+    }
+
+    try {
+      const resUser = await fetchAPI(`/user?username=${CURRENT_USER}`);
+      if (!resUser.ok) throw new Error('Gagal ambil data user terbaru');
+      const latestData = await resUser.json();
+      
+      let oldLevel = latestData.level;
+      let newLevel = latestData.level;
+      let newExp = latestData.exp;
+      let newExpNext = latestData.exp_to_next;
+      let leveledUp = false;
+      let levelBonus = 0;
+      let expGain = myResult === 'win' ? 10 : (myResult === 'draw' ? 5 : 2);
+      let baseCoin = myResult === 'win' ? (mode === 'rank' ? 200 : 100) : (myResult === 'draw' ? 30 : 0);
+
+      newExp += expGain;
+      while (newExp >= newExpNext) {
+        newExp -= newExpNext; newLevel++; newExpNext = newLevel * 10; leveledUp = true;
+      }
+      if (leveledUp) levelBonus = 50 * newLevel;
+
+      let totalCoin = baseCoin + levelBonus;
+      let rankDelta = 0;
+      if (mode === 'rank') rankDelta = myResult === 'win' ? 1 : (myResult === 'lose' ? -1 : 0);
+
+      const resFinish = await fetchAPI('/finish-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: CURRENT_USER, result: myResult, coinsDelta: totalCoin,
+          newLevel: newLevel, newExp: newExp, newExpNext: newExpNext,
+          rankDelta: rankDelta, expectedCoins: latestData.coins
+        })
+      });
+
+      const finishData = await resFinish.json();
+      if (resFinish.status === 409) {
+        showToast('⚠️ Data berubah, koin disinkronkan ulang', 'error');
+        await fetchUserData();
+        throw new Error('Koin sudah berubah.');
+      }
+      if (!resFinish.ok) throw new Error(finishData.error || 'Gagal simpan hasil game');
+
+      userData = finishData.user;
+      const finalRank = { totalStars: userData.rank_stars };
+      renderGameOverUI(myResult, expGain, baseCoin, totalCoin, leveledUp, levelBonus, 
+                       { level: userData.level, exp: userData.exp, expToNext: userData.exp_to_next }, 
+                       finalRank, rankDelta, mode);
+
+    } catch (err) {
+      console.error(err);
+      showToast('❌ ' + err.message, 'error');
+      document.getElementById('goRewards').innerHTML = '<div class="reward-chip">⚠️ Gagal sinkron reward</div>';
+    }
+  }
+
+  function renderGameOverUI(myResult, expGain, baseCoin, totalCoin, leveledUp, levelBonus, prof, rankObj, rankDelta, currentMode) {
+    const rewardsBox = document.getElementById('goRewards');
+    const levelUpBox = document.getElementById('goLevelUp');
+    const expBox = document.getElementById('goExpBox');
+    const rankChange = document.getElementById('goRankChange');
+
+    rewardsBox.innerHTML = '';
+    rewardsBox.style.display = 'flex';
+    
+    if (baseCoin > 0) {
+      rewardsBox.innerHTML += `<div class="reward-chip">🪙 +${baseCoin.toLocaleString('en-US')} Koin</div>`;
+    }
+    rewardsBox.innerHTML += `<div class="reward-chip exp">⭐ +${expGain} EXP</div>`;
+
+    if (leveledUp) {
+      levelUpBox.style.display = 'block';
+      document.getElementById('goLevelNum').textContent = prof.level;
+      document.getElementById('goLevelReward').textContent = '+' + levelBonus + ' Koin bonus';
+    } else {
+      levelUpBox.style.display = 'none';
+    }
+
+    expBox.style.display = 'block';
+    const pct = Math.min(100, (prof.exp / prof.expToNext) * 100);
+    setTimeout(() => { document.getElementById('goExpFill').style.width = pct + '%'; }, 300);
+    document.getElementById('goExpText').textContent = prof.exp + '/' + prof.expToNext;
+    document.getElementById('goNextLevelText').textContent = 'Lv. ' + (prof.level + 1);
+
+    if (currentMode === 'rank') {
+      const newRank = starsToRank(rankObj.totalStars);
+      rankChange.style.display = 'block';
+      document.getElementById('goNewRank').textContent = newRank.rankName + ' ' + toRoman(newRank.rankIdx + 1);
+      document.getElementById('goRankChangeText').textContent = 
+        rankDelta > 0 ? '+1 ★  (Naik Rank!)' : (rankDelta < 0 ? '-1 ★  (Turun Rank)' : 'Seri (tidak ada perubahan)');
+      
+      const starsEl = document.getElementById('goRankStars');
+      starsEl.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        const s = document.createElement('span');
+        s.textContent = '★';
+        if (i >= newRank.stars) s.className = 'empty';
+        starsEl.appendChild(s);
+      }
+    } else {
+      rankChange.style.display = 'none';
+    }
+  }
+
+  function updateRankBadges() {
+    if (!userData) return;
+    const myRankObj = starsToRank(userData.rank_stars || 0);
+
+    if (mode === 'rank' || mode === 'byone') {
+      document.getElementById('myRankBadge').style.display = 'flex';
+      document.getElementById('oppRankBadge').style.display = 'flex';
+      renderRankBadge(myRankObj, document.getElementById('myRankStars'), document.getElementById('myRankName'));
+      
+      if (mode === 'rank') {
+        const oppStars = Math.max(0, Math.min(MAX_STARS, (userData.rank_stars || 0) + Math.floor(Math.random() * 5) - 2));
+        const oppRankObj = starsToRank(oppStars);
+        renderRankBadge(oppRankObj, document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
+      }
+    } else {
+      document.getElementById('myRankBadge').style.display = 'none';
+      document.getElementById('oppRankBadge').style.display = 'none';
+    }
+  }
+
+  function startMultiplayerPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(async () => {
+      try {
+        const res = await fetchAPI(`/game/state?room=${currentRoomCode}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const sess = data.session;
+
+        // Sinkronisasi info lawan
+        if (sess.player_a.toLowerCase() === CURRENT_USER.toLowerCase()) {
+          document.getElementById('oppName').textContent = sess.player_b;
+          document.getElementById('oppAvatar').textContent = sess.player_b[0].toUpperCase();
+          if (data.playerB) renderRankBadge(starsToRank(data.playerB.rank_stars), document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
+          document.getElementById('oppRole').textContent = 'HITAM • ' + sess.player_b.toUpperCase();
+        } else {
+          document.getElementById('oppName').textContent = sess.player_a;
+          document.getElementById('oppAvatar').textContent = sess.player_a[0].toUpperCase();
+          if (data.playerA) renderRankBadge(starsToRank(data.playerA.rank_stars), document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
+          document.getElementById('oppRole').textContent = 'HITAM • ' + sess.player_a.toUpperCase();
+        }
+
+        if (sess.status === 'finished' && !gameOver) {
+          gameOver = true;
+          if (pollInterval) clearInterval(pollInterval);
+          
+          let winnerColor = sess.winner;
+          let winner = 'draw';
+          if (winnerColor === 'w') winner = 'white';
+          else if (winnerColor === 'b') winner = 'black';
+          
+          endGame(winner, 'timeout');
+          return;
+        }
+
+        // Sinkronisasi Papan
+        if (!gameOver && sess.board_state) {
+           const localBoardStr = JSON.stringify(board);
+           const remoteBoardStr = JSON.stringify(sess.board_state);
+           
+           if (localBoardStr !== remoteBoardStr) {
+               board = sess.board_state;
+               turn = sess.turn;
+               selected = null; validMoves = [];
+               renderBoard(); // Ini bakal nge-refresh papan pake warna & skin yang bener
+               
+               if (isCheckmate(turn)) {
+                   gameOver = true;
+                   const winner = turn === 'w' ? 'black' : 'white';
+                   endGame(winner, 'checkmate');
+               } else if (isStalemate(turn)) {
+                   gameOver = true;
+                   endGame('draw', 'stalemate');
+               }
+           }
+        }
+      } catch(e) { console.warn('Sync error:', e); }
+    }, 1500); 
+  }
+
+  async function startGame(selectedMode) {
+    mode = selectedMode;
+    gameOver = false;
+    history = [];
+    lastMove = null;
+    selected = null;
+    validMoves = [];
+    turn = 'w';
+    myColor = 'w';
+    flipped = false;
+    aiThinking = false;
+    initBoard();
+
+    const badge = document.getElementById('modeBadge');
+    const icon = document.getElementById('modeIcon');
+    const name = document.getElementById('modeName');
+    badge.className = 'mode-badge ' + (mode === 'byone' ? 'byone' : mode);
+    if (mode === 'classic') { icon.textContent = '⚔️'; name.textContent = 'CLASSIC'; }
+    else if (mode === 'rank') { icon.textContent = '🏆'; name.textContent = 'RANK'; }
+    else { icon.textContent = '👥'; name.textContent = 'BY ONE'; }
+
+    document.getElementById('myName').textContent = myName;
+    document.getElementById('myAvatar').textContent = (myName[0] || '♔').toUpperCase();
+    
+    const undoBtn = document.getElementById('undoBtn');
+    undoBtn.disabled = (mode === 'rank' || isMultiplayer);
+    undoBtn.title = (mode === 'rank' || isMultiplayer) ? 'Tidak tersedia' : 'Undo';
+
+    const diffBadge = document.getElementById('aiDiffBadge');
+    if (mode === 'byone' || isMultiplayer) {
+      diffBadge.style.display = 'none';
+    } else {
+      const diff = getAIDifficulty();
+      diffBadge.textContent = diff.label;
+      diffBadge.className = 'ai-diff ' + diff.tier;
+      diffBadge.style.display = 'flex';
+    }
+
+    // Render papan pake skin yang udah di-set
+    renderBoard();
+    updateRankBadges();
+
+    ['setupModal', 'inviteModal', 'waitingModal'].forEach(id => {
+      document.getElementById(id).classList.remove('show');
+    });
+
+    if (isMultiplayer) {
+      startMultiplayerPolling();
+      
+      try {
+          const resTok = await fetchAPI('/settings');
+          if (resTok.ok) {
+              const setData = await resTok.json();
+            AGORA_TOKEN = (setData.agora_token || "").trim();
+if (setData.agora_app_id) AGORA_APP_ID = setData.agora_app_id; // <- TAMBAHIN INI
+          }
+      } catch(e) {}
+      
+      if (AGORA_TOKEN) {
+          initAgora(currentRoomCode);
+      } else {
+          showToast('⚠️ Token Voice kosong. Minta admin isi di Dashboard.', 'error');
+      }
+    }
+  }
+
+  document.getElementById('chooseClassic').addEventListener('click', () => {
+    opponentName = 'AI (Classic)';
+    document.getElementById('oppRole').textContent = 'HITAM • AI';
+    document.getElementById('myRole').textContent = 'PUTIH • KAMU';
+    startGame('classic');
+  });
+
+  document.getElementById('chooseRank').addEventListener('click', () => {
+    opponentName = 'AI (Ranked)';
+    document.getElementById('oppRole').textContent = 'HITAM • AI';
+    document.getElementById('myRole').textContent = 'PUTIH • KAMU';
+    startGame('rank');
+  });
+
+  document.getElementById('chooseByOne').addEventListener('click', () => {
+    if (IS_OFFLINE) return showToast('❌ Fitur By One hanya online', 'error');
+    document.getElementById('setupModal').classList.remove('show');
+    document.getElementById('inviteModal').classList.add('show');
+    document.getElementById('friendInput').value = '';
+    document.getElementById('friendInput').focus();
+    document.getElementById('inviteStatus').style.display = 'none';
+  });
+
+  document.getElementById('sendInvite').addEventListener('click', async () => {
+    const input = document.getElementById('friendInput');
+    const uname = input.value.trim();
+
+    if (!uname) { showInviteStatus('❌ Masukkan username!', true); return; }
+    if (uname.toLowerCase() === myName.toLowerCase()) { showInviteStatus('❌ Tidak bisa mengundang diri sendiri!', true); return; }
+    if (uname.length < 3) { showInviteStatus('❌ Username minimal 3 karakter!', true); return; }
+
+    const btn = document.getElementById('sendInvite');
+    btn.disabled = true; btn.textContent = 'MENGIRIM...';
+
+    try {
+      const res = await fetchAPI('/game/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_a: myName, player_b: uname })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      showInviteStatus('✅ Undangan dikirim ke <b>' + uname + '</b>!', false);
+      
+      setTimeout(() => {
+        document.getElementById('inviteModal').classList.remove('show');
+        document.getElementById('waitingModal').classList.add('show');
+        document.getElementById('waitingText').textContent = 'Menunggu ' + uname + ' menerima undangan...';
+        
+        setTimeout(() => {
+          document.getElementById('waitingStatus').innerHTML = '✅ <span style="color:var(--green)">' + uname + ' siap!</span><br>Memulai pertandingan...';
+          setTimeout(() => {
+            window.location.href = `game.html?room=${data.roomCode}`;
+          }, 1200);
+        }, 2500);
+      }, 1000);
+
+    } catch (e) {
+      showInviteStatus('❌ ' + e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = '📨 KIRIM UNDANGAN';
+    }
+  });
+
+  function showInviteStatus(msg, isError) {
+    const el = document.getElementById('inviteStatus');
+    el.innerHTML = msg;
+    el.style.display = 'block';
+    el.classList.toggle('success', !isError);
+  }
+
+  document.getElementById('cancelInvite').addEventListener('click', () => {
+    document.getElementById('inviteModal').classList.remove('show');
+    document.getElementById('setupModal').classList.add('show');
+  });
+
+  document.getElementById('cancelWaiting').addEventListener('click', () => {
+    document.getElementById('waitingModal').classList.remove('show');
+    document.getElementById('setupModal').classList.add('show');
+    showToast('❌ Undangan dibatalkan');
+  });
+
+  document.getElementById('friendInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('sendInvite').click();
+  });
+
+  document.getElementById('undoBtn').addEventListener('click', () => {
+    if (mode === 'rank' || isMultiplayer) { showToast('❌ Tidak bisa undo di mode ini!', 'error'); return; }
+    if (history.length === 0) { showToast('❌ Tidak ada langkah untuk di-undo', 'error'); return; }
+    if (gameOver) { showToast('❌ Game sudah selesai', 'error'); return; }
+    if (aiThinking) { showToast('⏳ Tunggu AI selesai', ''); return; }
+    const prev = history.pop();
+    board = prev.board; turn = prev.turn; lastMove = prev.lastMove;
+    selected = null; validMoves = []; renderBoard();
+    showToast('↶ Langkah dibatalkan');
+  });
+
+  document.getElementById('exitBtn').addEventListener('click', () => {
+    if (mode === 'rank') { document.getElementById('rankExitModal').classList.add('show'); return; }
+    document.getElementById('exitModal').classList.add('show');
+  });
+
+  document.getElementById('cancelExit').addEventListener('click', () => {
+    document.getElementById('exitModal').classList.remove('show');
+  });
+
+  document.getElementById('confirmExit').addEventListener('click', () => {
+    leaveAgora();
+    window.location.href = 'home.html';
+  });
+
+  document.getElementById('okRankExit').addEventListener('click', () => {
+    document.getElementById('rankExitModal').classList.remove('show');
+  });
+
+  document.getElementById('flipBtn').addEventListener('click', () => {
+    flipped = !flipped; renderBoard();
+    showToast(flipped ? '🔄 Papan dibalik' : '🔄 Papan normal');
+  });
+
+  document.getElementById('resignBtn').addEventListener('click', () => {
+    if (gameOver) return;
+    const txt = document.getElementById('resignText');
+    if (mode === 'rank') {
+      txt.innerHTML = 'Kamu akan dihitung <b style="color:var(--red)">KALAH</b> dan <b style="color:var(--red)">-1 ★</b> rank!';
+    } else if (isMultiplayer) {
+      txt.textContent = 'Kamu akan dihitung kalah, dan lawanmu menang.';
+    } else {
+      txt.textContent = 'Kamu akan dihitung kalah.';
+    }
+    document.getElementById('resignModal').classList.add('show');
+  });
+
+  document.getElementById('cancelResign').addEventListener('click', () => {
+    document.getElementById('resignModal').classList.remove('show');
+  });
+
+  document.getElementById('confirmResign').addEventListener('click', () => {
+    document.getElementById('resignModal').classList.remove('show');
+    const winner = turn === 'w' ? 'black' : 'white';
+    
+    if (isMultiplayer) {
+      fetchAPI('/game/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomCode: currentRoomCode, boardState: board, turn: turn, status: 'finished', winner: winner })
+      }).catch(e => {});
+    }
+    endGame(winner, 'resign');
+  });
+
+  document.getElementById('drawBtn').addEventListener('click', () => {
+    if (gameOver) return;
+    document.getElementById('drawModal').classList.add('show');
+  });
+
+  document.getElementById('cancelDraw').addEventListener('click', () => {
+    document.getElementById('drawModal').classList.remove('show');
+  });
+
+  document.getElementById('confirmDraw').addEventListener('click', () => {
+    document.getElementById('drawModal').classList.remove('show');
+    setTimeout(() => {
+      if (Math.random() < 0.7) {
+        if (isMultiplayer) {
+          fetchAPI('/game/move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomCode: currentRoomCode, boardState: board, turn: turn, status: 'finished', winner: 'draw' }) }).catch(e=>{});
+        }
+        endGame('draw', 'agreement');
+      }
+      else showToast('❌ Lawan menolak tawaran draw', 'error');
+    }, 800);
+  });
+
+  document.getElementById('goHome').addEventListener('click', () => {
+    if (pollInterval) clearInterval(pollInterval);
+    leaveAgora();
+    window.location.href = 'home.html';
+  });
+
+  let toastTimer;
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast'; if (type) t.classList.add(type);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  fetchUserData();
+
+  setTimeout(async () => {
+    if (urlRoom) {
+      isMultiplayer = true;
+      currentRoomCode = urlRoom;
+      mode = 'byone';
+      
+      try {
+        const res = await fetchAPI(`/game/state?room=${currentRoomCode}`);
+        if (!res.ok) throw new Error('Room tidak ditemukan');
+        const data = await res.json();
+        const sess = data.session;
+        
+        if (sess.player_a.toLowerCase() === CURRENT_USER.toLowerCase()) {
+            opponentName = sess.player_b;
+            document.getElementById('oppRole').textContent = 'HITAM • ' + sess.player_b.toUpperCase();
+            if (data.playerB) renderRankBadge(starsToRank(data.playerB.rank_stars), document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
+        } else {
+            opponentName = sess.player_a;
+            document.getElementById('oppRole').textContent = 'HITAM • ' + sess.player_a.toUpperCase();
+            if (data.playerA) renderRankBadge(starsToRank(data.playerA.rank_stars), document.getElementById('oppRankStars'), document.getElementById('oppRankName'));
+        }
+        
+        // Init board dari DB
+        board = sess.board_state;
+        turn = sess.turn;
+        
+        // Set nama user
+        document.getElementById('myName').textContent = myName;
+        document.getElementById('myAvatar').textContent = (myName[0] || '♔').toUpperCase();
+        document.getElementById('myRole').textContent = 'PUTIH • KAMU';
+        
+        // Mulai Game
+        startGame('byone');
+        
+        showToast('🎮 Lawan: ' + opponentName);
+      } catch(e) {
+        showToast('❌ ' + e.message, 'error');
+        setTimeout(() => window.location.href = 'home.html', 2000);
+      }
+      return;
+    }
+
+    if (urlMode === 'classic') {
+      opponentName = 'AI (Classic)';
+      document.getElementById('oppRole').textContent = 'HITAM • AI';
+      document.getElementById('myRole').textContent = 'PUTIH • KAMU';
+      startGame('classic');
+    } else if (urlMode === 'rank') {
+      opponentName = 'AI (Ranked)';
+      document.getElementById('oppRole').textContent = 'HITAM • AI';
+      document.getElementById('myRole').textContent = 'PUTIH • KAMU';
+      startGame('rank');
+    }
+  }, 500);
+</script>
+</body>
+</html>
